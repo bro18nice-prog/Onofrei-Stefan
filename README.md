@@ -1,19 +1,22 @@
-# Hi, I'm Onofrei Stefan 👋
+# Onofrei Stefan
 
-I’m a high school student passionate about **AI, IoT, and Robotics**.  
-I build real-world projects using **Python, Machine Learning, and IoT devices**.
+I build software and experiment with connected devices. My current focus is bringing voice control, computer vision, and small hardware projects together.
 
-## Skills
-- Python, C/C++
-- Machine Learning (scikit-learn, TensorFlow)
-- IoT (Raspberry Pi, ESP32, Tuya devices)
-- Web Dashboards (Streamlit, Dash, HTML/CSS basics)
-- Git, GitHub, Linux
+## Current work
 
-## Projects
-- [Home Energy Monitor & Optimizer](link_catre_repo) – Flagship project tracking & optimizing home energy
-- [Energy Prediction ML Model](link_catre_repo) – ML model predicting energy consumption
-- [Web Dashboard Simulation](link_catre_repo) – Interactive dashboard simulation
+**Titan** is my voice assistant project, running on a Raspberry Pi 4 with a microphone and speakers. It controls lights at home and laptop functions through voice commands. The first version is close to completion; the code and setup guide are not published here yet.
 
-## Contact
-- Email: bro18nice@gmail.com  
+**Stylo** and **Conquer** are applications I am preparing to document and publish. Their repositories and demos will be linked here when they are ready.
+
+## Next experiments
+
+- **Hand gesture control:** use a laptop camera to turn hand movements into cursor actions and computer commands. Planning stage.
+- **Smart glasses:** build a minimal wearable companion for Titan. Planning stage; the first hardware features are still being selected.
+
+## Other work
+
+- [HomeEnergyMonitor](https://github.com/bro18nice-prog/HomeEnergyMonitor) — home energy monitoring project.
+
+## What I am working toward
+
+For each project, I want to share a working demo, clear setup instructions, and notes explaining the design choices and limitations. I am learning to maintain and extend the code as I build.
