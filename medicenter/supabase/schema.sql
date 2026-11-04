@@ -44,6 +44,10 @@ create index if not exists bookings_date_cat on public.bookings (date, cat);
 
 -- ---------- cine este membru al personalului ----------
 
+-- Funcțiile ajutătoare stau în schema „private”, care nu este expusă prin API.
+create schema if not exists private;
+grant usage on schema private to anon, authenticated;
+
 -- Membru al personalului = utilizator logat, cu email confirmat, trecut în tabelul staff.
 create or replace function public.my_role() returns text
 language sql stable security definer set search_path = public as $$
@@ -53,19 +57,21 @@ language sql stable security definer set search_path = public as $$
   where u.id = auth.uid() and u.email_confirmed_at is not null
 $$;
 
-create or replace function public.is_staff() returns boolean
+create or replace function private.is_staff() returns boolean
 language sql stable security definer set search_path = public as $$
   select public.my_role() is not null
 $$;
 
-create or replace function public.is_admin() returns boolean
+create or replace function private.is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
   select coalesce(public.my_role() = 'admin', false)
 $$;
+-- folosite de regulile de acces de mai jos, deci trebuie să poată fi apelate de orice vizitator
+grant execute on function private.is_staff(), private.is_admin() to anon, authenticated;
 
 -- ---------- verificarea locurilor libere ----------
 
-create or replace function public._check_capacity(p_cat text, p_date date, p_hour int, p_hours int, p_exclude uuid)
+create or replace function private.check_capacity(p_cat text, p_date date, p_hour int, p_hours int, p_exclude uuid)
 returns void
 language plpgsql security definer set search_path = public as $$
 declare
@@ -114,7 +120,7 @@ create or replace function public.book(
 ) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
-  staff boolean := public.is_staff();
+  staff boolean := private.is_staff();
   s jsonb;
   local_now timestamp := now() at time zone 'Europe/Bucharest';
   new_id uuid;
@@ -131,7 +137,7 @@ begin
       raise exception 'LIMIT';
     end if;
   end if;
-  perform public._check_capacity(p_cat, p_date, p_hour, p_hours, null);
+  perform private.check_capacity(p_cat, p_date, p_hour, p_hours, null);
   insert into public.bookings (service_id, cat, date, hour, hours, name, phone, note, source, created_by)
   values (p_service_id, p_cat, p_date, p_hour, p_hours, trim(p_name), trim(p_phone), coalesce(trim(p_note), ''),
           case when staff then coalesce(p_source, 'clinica') else 'online' end, auth.uid())
@@ -146,14 +152,14 @@ language plpgsql security definer set search_path = public as $$
 declare
   b public.bookings;
 begin
-  if not public.is_staff() then
+  if not private.is_staff() then
     raise exception 'NOT_STAFF';
   end if;
   select * into b from public.bookings where id = p_id;
   if not found then
     raise exception 'NOT_FOUND';
   end if;
-  perform public._check_capacity(b.cat, p_date, p_hour, b.hours, p_id);
+  perform private.check_capacity(b.cat, p_date, p_hour, b.hours, p_id);
   update public.bookings set date = p_date, hour = p_hour where id = p_id;
 end $$;
 
@@ -166,26 +172,26 @@ alter table public.bookings enable row level security;
 drop policy if exists "setari vizibile" on public.settings;
 create policy "setari vizibile" on public.settings for select using (true);
 drop policy if exists "setari modificate de admin" on public.settings;
-create policy "setari modificate de admin" on public.settings for update using (public.is_admin()) with check (public.is_admin());
+create policy "setari modificate de admin" on public.settings for update using (private.is_admin()) with check (private.is_admin());
 
 drop policy if exists "personal vizibil personalului" on public.staff;
-create policy "personal vizibil personalului" on public.staff for select using (public.is_staff());
+create policy "personal vizibil personalului" on public.staff for select using (private.is_staff());
 drop policy if exists "personal adaugat de admin" on public.staff;
-create policy "personal adaugat de admin" on public.staff for insert with check (public.is_admin());
+create policy "personal adaugat de admin" on public.staff for insert with check (private.is_admin());
 drop policy if exists "personal modificat de admin" on public.staff;
-create policy "personal modificat de admin" on public.staff for update using (public.is_admin()) with check (public.is_admin());
+create policy "personal modificat de admin" on public.staff for update using (private.is_admin()) with check (private.is_admin());
 drop policy if exists "personal sters de admin" on public.staff;
-create policy "personal sters de admin" on public.staff for delete using (public.is_admin());
+create policy "personal sters de admin" on public.staff for delete using (private.is_admin());
 
 drop policy if exists "programari vizibile personalului" on public.bookings;
-create policy "programari vizibile personalului" on public.bookings for select using (public.is_staff());
+create policy "programari vizibile personalului" on public.bookings for select using (private.is_staff());
 drop policy if exists "programari modificate de personal" on public.bookings;
-create policy "programari modificate de personal" on public.bookings for update using (public.is_staff()) with check (public.is_staff());
+create policy "programari modificate de personal" on public.bookings for update using (private.is_staff()) with check (private.is_staff());
 drop policy if exists "programari anulate de personal" on public.bookings;
-create policy "programari anulate de personal" on public.bookings for delete using (public.is_staff());
+create policy "programari anulate de personal" on public.bookings for delete using (private.is_staff());
 -- Nu există regulă de insert: programările noi intră doar prin book(), care verifică locurile.
 
-revoke all on function public._check_capacity(text, date, int, int, uuid) from public, anon, authenticated;
+revoke all on function private.check_capacity(text, date, int, int, uuid) from public, anon, authenticated;
 revoke all on function public.move_booking(uuid, date, int) from public, anon;
 grant execute on function public.move_booking(uuid, date, int) to authenticated;
 grant execute on function public.get_availability(date, date) to anon, authenticated;

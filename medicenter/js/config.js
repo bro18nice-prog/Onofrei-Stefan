@@ -5,6 +5,6 @@
  */
 window.MC = window.MC || {};
 MC.CONFIG = {
-  supabaseUrl: '',      // ex.: https://abcdefgh.supabase.co
-  supabaseAnonKey: ''   // cheia „anon public”
+  supabaseUrl: 'https://bywgiyyqwyrbvyfuqtcx.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5d2dpeXlxd3lyYnZ5ZnVxdGN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3OTkxODYsImV4cCI6MjEwOTM3NTE4Nn0.lwOWEw0o8_K4EJL90ncCYtY7zR6NQW63Ep2WpxQBq0U'
 };
