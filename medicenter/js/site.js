@@ -212,7 +212,7 @@ window.MC = window.MC || {};
 
   /* ---------- Programare online ---------- */
 
-  MC.bk = { step: 1, cat: 'kineto', serviceId: null, date: null, hour: null, month: null, name: '', phone: '', note: '', gdpr: false, done: null };
+  MC.bk = { step: 1, cat: 'kineto', serviceId: null, date: null, hour: null, month: null, name: '', phone: '', note: '', gdpr: false, done: null, sending: false };
 
   function booking() {
     var b = MC.bk;
@@ -307,7 +307,7 @@ window.MC = window.MC || {};
       '<label for="bk-note">Observații <span class="muted">(opțional)</span></label>' +
       '<textarea id="bk-note" name="note" rows="3" placeholder="Ex.: prima ședință, recomandare medicală">' + MC.esc(b.note) + '</textarea>' +
       '<label class="check" for="bk-gdpr"><input type="checkbox" id="bk-gdpr" name="gdpr"' + (b.gdpr ? ' checked' : '') + '>' +
-      '<span>Sunt de acord ca Medicenter Clinic să folosească aceste date pentru gestionarea programării.</span></label>' +
+      '<span>Sunt de acord ca Medicenter Clinic să folosească aceste date pentru gestionarea programării. <a href="#confidentialitate" target="_blank">Politica de confidențialitate</a></span></label>' +
       '<p class="form-error" id="bk-error" role="alert" hidden></p>' +
       '<div class="bk-actions"><button type="button" class="btn ghost" data-action="bk-step" data-step="2">Înapoi</button>' +
       '<button type="submit" class="btn primary">Confirmă programarea</button></div>' +
@@ -352,31 +352,43 @@ window.MC = window.MC || {};
 
   function submitBooking(form) {
     var b = MC.bk;
+    if (b.sending) return;
     b.name = form.name.value; b.phone = form.phone.value; b.note = form.note.value; b.gdpr = form.gdpr.checked;
     var err = '';
     if (b.name.trim().length < 3) err = 'Scrie numele și prenumele.';
     else if (!MC.validPhone(b.phone)) err = 'Numărul de telefon nu pare corect. Folosește formatul 07xx xxx xxx.';
     else if (!b.gdpr) err = 'Bifează acordul pentru folosirea datelor ca să putem înregistra programarea.';
-    var svc = MC.serviceById(b.serviceId);
-    if (!err) {
-      var chk = MC.store.check(svc.cat, b.date, b.hour, MC.slotHours(svc));
-      if (!chk.ok) {
-        err = 'Între timp ora aleasă s-a ocupat. Alege altă oră.';
-        b.hour = null; b.step = 2;
-        MC.toast(err, 'bad');
-        MC.render();
-        return;
-      }
-    }
     var box = document.getElementById('bk-error');
     if (err) { box.textContent = err; box.hidden = false; return; }
-    b.done = MC.store.add({ serviceId: b.serviceId, date: b.date, hour: b.hour, name: b.name, phone: b.phone, note: b.note, source: 'online' });
-    MC.render();
-    window.scrollTo(0, 0);
+
+    var btn = form.querySelector('button[type=submit]');
+    b.sending = true;
+    btn.disabled = true;
+    btn.textContent = 'Se trimite…';
+    MC.store.add({ serviceId: b.serviceId, date: b.date, hour: b.hour, name: b.name, phone: b.phone, note: b.note, source: 'online' })
+      .then(function (done) {
+        b.sending = false;
+        b.done = done;
+        MC.render();
+        window.scrollTo(0, 0);
+      }, function (e) {
+        b.sending = false;
+        // ora s-a ocupat între timp: reîncărcăm locurile și ne întoarcem la alegerea orei
+        if (/complet|trecut|lucrează|programului/.test(e.message)) {
+          MC.toast('Între timp ora aleasă s-a ocupat. Alege altă oră.', 'bad');
+          b.hour = null; b.step = 2;
+          MC.store.refresh().then(MC.render, MC.render);
+          return;
+        }
+        btn.disabled = false;
+        btn.textContent = 'Confirmă programarea';
+        box.textContent = e.message;
+        box.hidden = false;
+      });
   }
 
   function resetBooking() {
-    MC.bk = { step: 1, cat: 'kineto', serviceId: null, date: null, hour: null, month: null, name: '', phone: '', note: '', gdpr: false, done: null };
+    MC.bk = { step: 1, cat: 'kineto', serviceId: null, date: null, hour: null, month: null, name: '', phone: '', note: '', gdpr: false, done: null, sending: false };
   }
 
   /* ---------- evenimente ---------- */
@@ -422,5 +434,24 @@ window.MC = window.MC || {};
     return false;
   };
 
-  MC.pages = { acasa: home, servicii: services, programare: booking, contact: contact };
+  /* ---------- Politica de confidențialitate ---------- */
+
+  function privacy() {
+    var op = C.company ? C.company : C.name;
+    return pageHero('GDPR', 'Politica de confidențialitate', 'Cum folosim datele pe care ni le lași când te programezi.') +
+      '<section class="wrap page"><div class="card legal">' +
+        '<h2>Cine suntem</h2><p>' + MC.esc(op) + ', ' + C.address + ', telefon ' + C.phone + '. Noi decidem cum sunt folosite datele din programări.</p>' +
+        '<h2>Ce date colectăm</h2><p>La programarea online: numele, numărul de telefon, serviciul, ziua și ora alese și, dacă le scrii, observațiile. ' +
+          'Te rugăm să nu scrii detalii medicale în câmpul de observații; le discutăm la clinică.</p>' +
+        '<h2>De ce le folosim</h2><p>Doar ca să înregistrăm programarea și să te putem contacta dacă trebuie mutată sau anulată. ' +
+          'Temeiul este acordul tău (bifat în formular) și pașii necesari înaintea unei prestări de servicii (art. 6 alin. (1) lit. a) și b) din GDPR).</p>' +
+        '<h2>Cine are acces</h2><p>Doar personalul clinicii, din agenda protejată prin parolă. Datele sunt găzduite de furnizorul bazei de date (Supabase), pe servere din Uniunea Europeană. ' +
+          'Nu vindem și nu dăm datele mai departe în scop de marketing.</p>' +
+        '<h2>Cât le păstrăm</h2><p>Cât este nevoie pentru gestionarea programărilor și cel mult ' + C.retentionMonths + ' luni după data programării, apoi le ștergem.</p>' +
+        '<h2>Drepturile tale</h2><p>Poți cere oricând să vezi, să corectezi sau să ștergi datele tale și îți poți retrage acordul, sunând la ' + C.phone + ' sau venind la clinică. ' +
+          'Dacă ești nemulțumit, poți depune o plângere la Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (www.dataprotection.ro).</p>' +
+      '</div></section>';
+  }
+
+  MC.pages = { acasa: home, servicii: services, programare: booking, contact: contact, confidentialitate: privacy };
 })();

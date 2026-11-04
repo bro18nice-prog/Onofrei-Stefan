@@ -3,7 +3,7 @@ window.MC = window.MC || {};
 
 (function () {
   MC.ui = { servicesCat: 'toate' };
-  var ROUTES = ['acasa', 'servicii', 'programare', 'contact', 'admin'];
+  var ROUTES = ['acasa', 'servicii', 'programare', 'contact', 'confidentialitate', 'admin'];
 
   function route() {
     var h = (location.hash || '').replace('#', '');
@@ -24,7 +24,7 @@ window.MC = window.MC || {};
     document.querySelectorAll('.nav a').forEach(function (a) {
       a.classList.toggle('on', a.getAttribute('href') === '#' + r);
     });
-    var titles = { acasa: 'Medicenter Clinic', servicii: 'Servicii și prețuri', programare: 'Programare online', contact: 'Contact', admin: 'Agenda clinicii' };
+    var titles = { acasa: 'Medicenter Clinic', servicii: 'Servicii și prețuri', programare: 'Programare online', contact: 'Contact', confidentialitate: 'Politica de confidențialitate', admin: 'Agenda clinicii' };
     document.title = titles[r] + (r === 'acasa' ? ' · Suceava' : ' · Medicenter Clinic');
     document.getElementById('menu').classList.remove('open');
     reveal();
@@ -92,7 +92,22 @@ window.MC = window.MC || {};
     });
 
     window.addEventListener('hashchange', function () { MC.render(); window.scrollTo(0, 0); });
-    MC.render();
+    MC.adminAutoRefresh(function () { return route() === 'admin'; });
+
+    // Linkurile din emailuri (confirmare cont, parolă nouă) vin cu date în adresă; le citim și curățăm adresa.
+    var hashParams = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    var authError = hashParams.get('error_description');
+
+    app.innerHTML = '<div class="loading"><span></span>Se încarcă…</div>';
+    MC.store.init().then(start, function (e) {
+      start();
+      MC.toast(e.message, 'bad');
+    });
+    function start() {
+      if (hashParams.has('access_token') || authError) history.replaceState(null, '', location.pathname + '#admin');
+      MC.render();
+      if (authError) MC.toast('Linkul din email nu mai este valabil. Cere unul nou.', 'bad');
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

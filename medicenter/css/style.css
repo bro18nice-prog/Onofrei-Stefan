@@ -572,3 +572,25 @@ body.is-admin .site-head, body.is-admin .site-foot, body.is-admin .fab { display
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .rv.pre { transform: none; opacity: 1; }
 }
+
+/* ---------- încărcare, autentificare, personal ---------- */
+.loading { min-height: 60vh; display: grid; place-items: center; align-content: center; gap: 14px; color: var(--muted); font-weight: 600; }
+.loading span { width: 38px; height: 38px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--sand-deep); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+body.busy { cursor: progress; }
+body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; pointer-events: none; }
+.admin-login > .swirl { width: 900px; left: -200px; top: -160px; color: var(--sand); opacity: .25; }
+.link-btn { background: none; border: 0; padding: 6px 0; color: var(--slate-deep); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; justify-self: center; }
+.login-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; }
+.who { color: #a9b8c5; font-size: 0.85rem; align-self: center; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.staff-card { display: grid; gap: 8px; }
+.staff-list { list-style: none; margin: 6px 0 10px; padding: 0; display: grid; }
+.staff-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.staff-list small { display: block; color: var(--muted); }
+.row-actions { display: flex; gap: 6px; }
+.staff-add { border-top: 1px solid var(--line); padding-top: 8px; }
+@media (max-width: 760px) { .who { display: none; } }
+.legal { max-width: 760px; display: grid; gap: 10px; }
+.legal h2 { font-size: 1.4rem; margin-top: 10px; }
+.legal p { color: var(--ink); }
+.copy a { color: #c3cfda; text-decoration: underline; }

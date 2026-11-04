@@ -8,7 +8,9 @@ MC.CLINIC = {
   phone: '0739 640 556',
   phoneHref: 'tel:+40739640556',
   hours: '09:00 – 20:00',
-  mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Strada+Vasile+Alecsandri+10+Suceava'
+  mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Strada+Vasile+Alecsandri+10+Suceava',
+  company: '',          // denumirea firmei și CUI, pentru politica de confidențialitate (de completat)
+  retentionMonths: 24   // cât păstrăm datele programărilor
 };
 
 /* Secțiile clinicii. Capacitatea (pacienți pe oră) se setează din admin. */

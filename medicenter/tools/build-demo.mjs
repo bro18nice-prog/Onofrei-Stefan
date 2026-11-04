@@ -9,7 +9,11 @@ const read = (p) => readFileSync(join(root, p), 'utf8');
 
 const html = read('index.html');
 const body = html.split('<!-- BODY:START -->')[1].split('<!-- BODY:END -->')[0];
-const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => read(m[1]));
+// Demo-ul rămâne în modul browser: fără biblioteca Supabase și fără configurare.
+const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)]
+  .map((m) => m[1])
+  .filter((src) => !src.includes('vendor/') && !src.endsWith('config.js'))
+  .map(read);
 const fonts = html.match(/<link rel="stylesheet" href="(https:\/\/fonts[^"]+)">/)[1];
 
 const out = [

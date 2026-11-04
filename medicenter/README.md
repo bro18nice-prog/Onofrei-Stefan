@@ -1,101 +1,108 @@
 # Medicenter Clinic – site cu programări online
 
-Site pentru Medicenter Clinic (Str. Vasile Alecsandri nr. 10, Suceava): prezentare, servicii și prețuri, programare online și agenda personalului.
+Site pentru Medicenter Clinic (Str. Vasile Alecsandri nr. 10, Suceava): prezentare, servicii și prețuri, programare online, agenda personalului.
 
 ## Structura
 
 ```
-index.html            site-ul public (header, footer, încărcarea scripturilor)
-agenda.html           aceeași aplicație, deschisă direct în agendă; se instalează pe telefon (generat)
-agenda.webmanifest    numele și iconița aplicației „Agenda” de pe telefon
-css/style.css         tot designul
-img/logo.png          logo-ul clinicii, cu fundal transparent
-img/logo-light.png    logo-ul pentru fundaluri închise
-img/icon-*.png        iconița aplicației de pe telefon
-js/data.js            datele clinicii, secțiile și lista de servicii cu prețuri
-js/utils.js           funcții pentru date calendaristice, texte, notificări
-js/store.js           unde se salvează programările și setările
-js/site.js            paginile publice și programarea online
-js/admin.js           panoul personalului: agenda, mutare, anulare, setări
-js/main.js            navigarea între pagini
-tools/build-demo.mjs  creează o singură pagină pentru link-ul de demo
-tools/make-agenda.mjs creează agenda.html din index.html
+index.html              site-ul public
+agenda.html             aceeași aplicație, deschisă direct în agendă; se instalează pe telefon (generat)
+agenda.webmanifest      numele și iconița aplicației „Agenda” de pe telefon
+_headers                reguli de securitate pentru găzduire
+css/style.css           tot designul
+img/                    logo (normal și pentru fundal închis), iconițe aplicație
+js/config.js            legătura cu baza de date (adresa și cheia publică Supabase)
+js/data.js              datele clinicii, secțiile și lista de servicii cu prețuri
+js/utils.js             date calendaristice, texte, notificări
+js/store.js             programări, setări, conturi (modul demo sau Supabase)
+js/site.js              paginile publice și programarea online
+js/admin.js             agenda personalului, setări, lista personalului
+js/main.js              navigarea între pagini, pornirea aplicației
+js/vendor/              biblioteca Supabase (versiune fixă, fără CDN)
+supabase/schema.sql     baza de date și regulile de acces (se rulează o dată în Supabase)
+tools/make-agenda.mjs   regenerează agenda.html după orice schimbare în index.html
+tools/build-demo.mjs    creează o singură pagină pentru link-ul de demo
 ```
 
-Site-ul e static: nu are nevoie de server, merge pe orice găzduire gratuită (Cloudflare Pages, Netlify, GitHub Pages).
-Paginile se deschid prin adrese de forma `…/#programare` și `…/#admin`.
+Site-ul e static: nu are nevoie de server propriu. Paginile se deschid prin adrese ca `…/#programare`.
 
-După orice modificare în `index.html`: `node tools/make-agenda.mjs`.
-Pentru link-ul de demo: `node tools/build-demo.mjs` creează `dist/medicenter-demo.html`.
+**Moduri de funcționare**
+- **Demo** (`js/config.js` gol): datele stau în browser, cu programări de test; parola agendei este `medicenter`.
+- **Live** (`js/config.js` completat): pacienții și personalul folosesc aceeași bază de date Supabase.
 
-## Conturile personalului (la lansare)
+## Lansarea (o singură dată)
 
-Conturile se fac în Supabase (gratuit), nu în cod:
-1. Se creează un cont pe supabase.com și un proiect „medicenter” (regiunea Frankfurt).
-2. Tabelele și regulile de acces se pun o singură dată, din fișierul de configurare al proiectului.
-3. **Adăugare membru al personalului:** Authentication → Users → Add user → email + parolă (sau „Invite”, ca persoana să-și aleagă singură parola).
-4. **Scoatere din cont:** Authentication → Users → utilizatorul → Delete user. Accesul se oprește imediat.
-5. **Parolă uitată:** pe ecranul de intrare există „Am uitat parola”, care trimite un link pe email.
+### 1. Baza de date – Supabase (gratuit)
+1. Cont pe **supabase.com** → **New project**: nume `medicenter`, regiunea **Central EU (Frankfurt)**, o parolă de bază de date (se păstrează, dar nu e nevoie de ea zilnic).
+2. **SQL Editor** → **New query** → se lipește conținutul din `supabase/schema.sql`.
+   Înainte de **Run**, la final se înlocuiește `EMAIL_ADMINISTRATOR` cu emailul administratorului clinicii.
+3. **Project Settings → API**: se copiază **Project URL** și cheia **anon public** în `js/config.js`.
+4. **Authentication → URL Configuration**:
+   - **Site URL**: adresa site-ului, ex. `https://medicenter-suceava.ro/agenda.html`
+   - **Redirect URLs**: se adaugă `https://medicenter-suceava.ro/**`
+5. **Authentication → Sign In / Providers → Email**: „Confirm email” rămâne **pornit**.
 
-Doar emailurile adăugate de administrator pot intra în agendă. Pacienții nu au cont: ei doar se programează.
+### 2. Găzduirea – Cloudflare Pages (gratuit)
+1. Cont pe **dash.cloudflare.com** → **Workers & Pages** → **Create** → **Pages** → conectare la GitHub și alegerea acestui repository.
+2. **Build command**: gol. **Build output directory**: `medicenter`.
+3. După publicare, site-ul are o adresă gratuită `…pages.dev`. Orice modificare urcată pe GitHub se publică singură.
 
-## Stadiul actual (demo)
+(Alternativ, Netlify: „Add new site” → „Deploy manually” → se trage folderul `medicenter`.)
 
-- Programările și setările se salvează **în browserul fiecărui dispozitiv** (localStorage). Merge pentru prezentare, dar o programare făcută de pe telefonul unui pacient nu ajunge în agenda de la clinică.
-- Înainte de lansare, `js/store.js` se leagă la o bază de date online gratuită (Supabase). Restul site-ului rămâne neschimbat.
-- Parola de admin din demo este `medicenter`. La lansare, fiecare membru al personalului primește cont propriu (email și parolă).
-- Agenda pornește cu programări de test, marcate „test”. Se șterg din **Setări → Șterge programările de test**.
+### 3. Domeniul
+- Gratuit: adresa `…pages.dev` sau `…netlify.app`.
+- Propriu (recomandat): un domeniu `.ro` de la un registrar românesc, apoi în Cloudflare Pages → **Custom domains** → se adaugă domeniul și se urmează pașii afișați.
+
+### 4. Primul cont
+Administratorul deschide `…/agenda.html` → **Prima dată aici? Creează cont** → emailul pus în schema SQL + o parolă → confirmă emailul primit → intră în agendă.
+
+## Conturile personalului
+
+- Administratorul adaugă colegii din **Agenda → Setări → Personal cu acces la agendă** (nume + email; bifat „Administrator” doar pentru cine trebuie să schimbe setări).
+- Colegul deschide `…/agenda.html` → **Prima dată aici? Creează cont** → același email + o parolă → confirmă din email.
+- **Parolă uitată**: pe ecranul de intrare, **Am uitat parola** → link pe email → parolă nouă.
+- **Plecarea unui coleg**: Setări → **Scoate accesul**. Accesul se oprește imediat, chiar dacă are încă parola.
+- Un cont creat cu un email care nu e în listă nu vede nimic.
+
+Securitatea este verificată în baza de date (`supabase/schema.sql`), nu doar în site:
+pacienții văd doar câte locuri sunt ocupate (fără nume), programările noi trec prin verificarea locurilor libere,
+iar datele pacienților sunt vizibile doar personalului din listă, cu email confirmat.
 
 ## Cum funcționează programările
 
-- Programările se fac pe ore fixe, între ora de început și ora de închidere (implicit 09:00–20:00, de luni până vineri).
-- Fiecare secție are o **capacitate pe oră**, adică câți pacienți pot fi programați în aceeași oră:
-  Kinetoterapie 4, Masaj 2, Fizioterapie 4, Neurologie și psihiatrie 1 (valori de test, se schimbă din Setări).
-- Serviciile de peste o oră (de ex. kinetoterapie neurologică 90 min, EEG 120 min) ocupă două ore consecutive.
+- Programări pe ore fixe, între prima oră și ora de închidere (implicit 09:00–20:00, luni–vineri).
+- Fiecare secție are o **capacitate pe oră** (pacienți în aceeași oră). Implicit: Kinetoterapie 4, Masaj 2, Fizioterapie 4, Neurologie și psihiatrie 1. Se schimbă din Setări.
+- Serviciile de peste o oră (ex. 90 min, EEG 120 min) ocupă două ore la rând.
 - Pachetele se programează ședință cu ședință.
-- Când o oră e plină, pacienții o văd „Complet” și nu o mai pot alege.
+- O oră plină apare „Complet” pentru pacienți. Dacă doi pacienți aleg ultimul loc în același timp, baza de date îl dă primului, iar al doilea e rugat să aleagă altă oră.
+- Același număr de telefon poate avea cel mult 5 programări viitoare făcute online (protecție împotriva programărilor false).
 
 ## Ghid pentru personal
 
 ### Intrarea în agendă
-1. Pe site, jos în pagină, apăsați **Acces personal** (adresa `…/agenda.html`).
-2. Introduceți parola și apăsați **Intră în cont**.
+Pe site, jos: **Acces personal** (adresa `…/agenda.html`) → email + parolă → **Intră în cont**.
 
-### Agenda ca aplicație pe telefon
-Se face o singură dată pe fiecare telefon, din pagina `…/agenda.html`:
-- **Android (Chrome):** meniul ⋮ din dreapta sus → **Instalează aplicația** (sau **Adaugă pe ecranul de pornire**) → **Instalează**.
-- **iPhone (Safari):** butonul **Partajează** (pătratul cu săgeată) → **Adaugă pe ecranul principal** → **Adaugă**.
+### Agenda ca aplicație pe telefon (o singură dată pe fiecare telefon)
+- **Android (Chrome):** se deschide `…/agenda.html` → meniul ⋮ → **Instalează aplicația** (sau **Adaugă pe ecranul de pornire**).
+- **iPhone (Safari):** se deschide `…/agenda.html` → **Partajează** (pătratul cu săgeată) → **Adaugă pe ecranul principal**.
 
-Pe ecran apare iconița **Agenda**. Se deschide direct în agendă, pe tot ecranul, fără bara browserului.
+Apare iconița **Agenda**, care se deschide direct în agendă, pe tot ecranul. Agenda se actualizează singură la fiecare minut.
 
 ### Citirea agendei
-- Fiecare coloană e o zi, fiecare rând e o oră. În fiecare oră apar pacienții programați.
-- Culoarea din stânga numelui arată secția (legenda e deasupra agendei).
-- Alegeți o secție din lista de sus ca să vedeți ocuparea fiecărei ore:
-  **verde** = locuri libere, **portocaliu** = aproape plin, **roșu** = complet. Numărul, de ex. `3/4`, înseamnă 3 pacienți din 4 locuri.
-- Săgețile ‹ › schimbă săptămâna, iar **Azi** revine la săptămâna curentă.
-- Pe telefon, agenda arată o singură zi. Ziua se alege din butoanele de deasupra.
+- Coloanele sunt zilele, rândurile sunt orele; culoarea din stânga numelui arată secția.
+- Din lista de sus se alege o secție ca să se vadă ocuparea: **verde** = locuri libere, **portocaliu** = aproape plin, **roșu** = complet (ex. `3/4`).
+- ‹ › schimbă săptămâna, **Azi** revine la săptămâna curentă. Pe telefon se vede o zi, aleasă din butoanele de sus.
 
-### Mutarea unei programări
-- **Pe calculator:** trageți pacientul cu mouse-ul în altă oră sau altă zi. Ora se colorează verde dacă mai e loc și roșu dacă e plină.
-- **Pe telefon sau calculator:** apăsați pe pacient, apoi în **Mută programarea** alegeți ziua și ora și apăsați **Mută**.
-- Dacă ora nouă e plină, mutarea nu se face și apare un mesaj.
+### Mutare, anulare, adăugare
+- **Mutare pe calculator:** se trage pacientul în altă oră (verde = se poate, roșu = plin).
+- **Mutare pe telefon:** se apasă pe pacient → **Mută programarea** → ziua și ora → **Mută**.
+- **Anulare:** pacientul → **Anulează programarea** → **Da, anulează**. Locul se eliberează imediat.
+- **Pacient care a sunat:** se apasă pe o oră goală sau pe **+ Programare**.
 
-### Anularea unei programări
-Apăsați pe pacient → **Anulează programarea** → **Da, anulează**. Locul devine imediat liber pentru alți pacienți.
+### Setări (doar administratori)
+Capacitatea pe oră pentru fiecare secție, programul, zilele lucrătoare, cu câte zile înainte se pot face programări, lista personalului.
 
-### Adăugarea unui pacient care a sunat
-- Apăsați pe o oră goală din agendă: se deschide formularul cu ziua și ora deja completate.
-- Sau apăsați **+ Programare** și completați serviciul, ziua, ora, numele și telefonul.
-
-### Setări
-- **Capacitate pe oră:** câți pacienți pot fi în aceeași oră, pe fiecare secție.
-- **Program:** prima oră de programare și ora de închidere.
-- **Zile lucrătoare:** bifați zilele în care clinica primește programări.
-- **Zile înainte:** cu câte zile în avans se pot programa pacienții (implicit 60).
-
-### Ce vede pacientul
-1. Alege secția și serviciul (cu durată și preț).
-2. Alege ziua din calendar (zilele cu locuri libere sunt colorate) și ora (cu numărul de locuri rămase).
-3. Completează numele și telefonul, bifează acordul pentru date și apasă **Confirmă programarea**.
-4. Programarea apare imediat în agendă, marcată „programat online”.
+## De completat înainte de lansare
+- `js/data.js` → `company`: denumirea firmei și CUI (apar în politica de confidențialitate).
+- `js/data.js` → `retentionMonths`: cât se păstrează datele programărilor (implicit 24 de luni).
+- Fotografii: locurile colorate de pe prima pagină și de pe cardurile secțiilor sunt pregătite pentru poze.
