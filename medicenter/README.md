@@ -5,9 +5,13 @@ Site pentru Medicenter Clinic (Str. Vasile Alecsandri nr. 10, Suceava): prezenta
 ## Structura
 
 ```
-index.html            pagina (header, footer, încărcarea scripturilor)
+index.html            site-ul public (header, footer, încărcarea scripturilor)
+agenda.html           aceeași aplicație, deschisă direct în agendă; se instalează pe telefon (generat)
+agenda.webmanifest    numele și iconița aplicației „Agenda” de pe telefon
 css/style.css         tot designul
 img/logo.png          logo-ul clinicii, cu fundal transparent
+img/logo-light.png    logo-ul pentru fundaluri închise
+img/icon-*.png        iconița aplicației de pe telefon
 js/data.js            datele clinicii, secțiile și lista de servicii cu prețuri
 js/utils.js           funcții pentru date calendaristice, texte, notificări
 js/store.js           unde se salvează programările și setările
@@ -15,12 +19,25 @@ js/site.js            paginile publice și programarea online
 js/admin.js           panoul personalului: agenda, mutare, anulare, setări
 js/main.js            navigarea între pagini
 tools/build-demo.mjs  creează o singură pagină pentru link-ul de demo
+tools/make-agenda.mjs creează agenda.html din index.html
 ```
 
 Site-ul e static: nu are nevoie de server, merge pe orice găzduire gratuită (Cloudflare Pages, Netlify, GitHub Pages).
 Paginile se deschid prin adrese de forma `…/#programare` și `…/#admin`.
 
+După orice modificare în `index.html`: `node tools/make-agenda.mjs`.
 Pentru link-ul de demo: `node tools/build-demo.mjs` creează `dist/medicenter-demo.html`.
+
+## Conturile personalului (la lansare)
+
+Conturile se fac în Supabase (gratuit), nu în cod:
+1. Se creează un cont pe supabase.com și un proiect „medicenter” (regiunea Frankfurt).
+2. Tabelele și regulile de acces se pun o singură dată, din fișierul de configurare al proiectului.
+3. **Adăugare membru al personalului:** Authentication → Users → Add user → email + parolă (sau „Invite”, ca persoana să-și aleagă singură parola).
+4. **Scoatere din cont:** Authentication → Users → utilizatorul → Delete user. Accesul se oprește imediat.
+5. **Parolă uitată:** pe ecranul de intrare există „Am uitat parola”, care trimite un link pe email.
+
+Doar emailurile adăugate de administrator pot intra în agendă. Pacienții nu au cont: ei doar se programează.
 
 ## Stadiul actual (demo)
 
@@ -41,9 +58,15 @@ Pentru link-ul de demo: `node tools/build-demo.mjs` creează `dist/medicenter-de
 ## Ghid pentru personal
 
 ### Intrarea în agendă
-1. Pe site, jos în pagină, apăsați **Acces personal** (sau deschideți adresa site-ului cu `#admin` la final).
+1. Pe site, jos în pagină, apăsați **Acces personal** (adresa `…/agenda.html`).
 2. Introduceți parola și apăsați **Intră în cont**.
-3. Pe telefon: în browser, alegeți **Adaugă pe ecranul principal**, ca să aveți agenda ca o aplicație.
+
+### Agenda ca aplicație pe telefon
+Se face o singură dată pe fiecare telefon, din pagina `…/agenda.html`:
+- **Android (Chrome):** meniul ⋮ din dreapta sus → **Instalează aplicația** (sau **Adaugă pe ecranul de pornire**) → **Instalează**.
+- **iPhone (Safari):** butonul **Partajează** (pătratul cu săgeată) → **Adaugă pe ecranul principal** → **Adaugă**.
+
+Pe ecran apare iconița **Agenda**. Se deschide direct în agendă, pe tot ecranul, fără bara browserului.
 
 ### Citirea agendei
 - Fiecare coloană e o zi, fiecare rând e o oră. În fiecare oră apar pacienții programați.

@@ -51,7 +51,7 @@ window.MC = window.MC || {};
     var t = MC.adm.tab;
     return '<div class="admin">' +
       '<header class="adm-bar"><div class="adm-bar-in">' +
-        '<a href="#acasa" class="adm-brand"><img src="img/logo.png" alt="Medicenter Clinic"></a>' +
+        '<a href="#acasa" class="adm-brand"><img src="img/logo-light.png" alt="Medicenter Clinic"></a>' +
         '<nav class="adm-tabs">' +
           '<button class="' + (t === 'agenda' ? 'on' : '') + '" data-action="adm-tab" data-tab="agenda">Agenda</button>' +
           '<button class="' + (t === 'setari' ? 'on' : '') + '" data-action="adm-tab" data-tab="setari">Setări</button>' +
@@ -320,7 +320,7 @@ window.MC = window.MC || {};
 
   MC.adminActions = {
     'adm-tab': function (el) { MC.adm.tab = el.dataset.tab; MC.adm.confirm = null; MC.render(); },
-    'adm-logout': function () { setAuthed(false); MC.go('acasa'); },
+    'adm-logout': function () { setAuthed(false); MC.go('admin'); },
     'adm-week': function (el) {
       var d = +el.dataset.dir;
       MC.adm.week = d === 0 ? MC.weekStart(MC.today()) : MC.addDays(MC.adm.week, 7 * d);

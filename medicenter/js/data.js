@@ -13,15 +13,28 @@ MC.CLINIC = {
 
 /* Secțiile clinicii. Capacitatea (pacienți pe oră) se setează din admin. */
 MC.CATS = [
-  { id: 'kineto', name: 'Kinetoterapie și recuperare', short: 'Kinetoterapie', color: '#50677a',
+  { id: 'kineto', name: 'Kinetoterapie și recuperare', short: 'Kinetoterapie', color: '#3a7cb8', icon: 'kineto',
     blurb: 'Kinetoterapie individuală și de grup, recuperare neurologică, RPG, Schroth, ATM.' },
-  { id: 'masaj', name: 'Masaj și drenaj limfatic', short: 'Masaj', color: '#8c7a5b',
+  { id: 'masaj', name: 'Masaj și drenaj limfatic', short: 'Masaj', color: '#c0784e', icon: 'masaj',
     blurb: 'Masaj terapeutic, reflexogen, prenatal, pentru bebeluși și drenaj limfatic.' },
-  { id: 'fizio', name: 'Fizioterapie', short: 'Fizioterapie', color: '#4f7d6b',
+  { id: 'fizio', name: 'Fizioterapie', short: 'Fizioterapie', color: '#22978a', icon: 'fizio',
     blurb: 'Curenți, laser, magnetoterapie, ultrasunete, Tecar și Deep Oscillation.' },
-  { id: 'neuro', name: 'Neurologie și psihiatrie', short: 'Neuro', color: '#7a5a78',
+  { id: 'neuro', name: 'Neurologie și psihiatrie', short: 'Neuro', color: '#8761b5', icon: 'neuro',
     blurb: 'Consultații, EEG, Brainmap și antrenament neuronal (neurofeedback).' }
 ];
+
+/* Iconițe desenate simplu (SVG), folosite pe carduri și în meniuri. */
+MC.ICONS = {
+  kineto: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="27" cy="8" r="4"/><path d="M26 14l-5 12 8 6v11"/><path d="M21 26l-8 8"/><path d="M17 18l9-4 7 7 7-2"/></svg>',
+  masaj: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 16c6-6 12 6 18 0s12 6 18 0"/><path d="M6 26c6-6 12 6 18 0s12 6 18 0"/><path d="M6 36c6-6 12 6 18 0s12 6 18 0"/></svg>',
+  fizio: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M27 4L11 27h12l-3 17 17-24H25z"/></svg>',
+  neuro: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 26h8l4-10 6 20 6-28 5 18h4l3-6 3 6h3"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+};
 
 /*
  * Câmpuri: id, cat, name, dur (minute, folosit pentru ocuparea orelor), durLabel (afișat),

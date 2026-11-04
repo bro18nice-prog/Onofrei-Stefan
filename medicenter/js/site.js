@@ -48,115 +48,166 @@ window.MC = window.MC || {};
     return res;
   }
 
-  function fromPrice(cat) {
-    var min = Infinity;
-    MC.SERVICES.forEach(function (s) {
-      if (s.cat !== cat || s.pkg) return;
-      var m = s.price.match(/\d+/);
-      if (m) min = Math.min(min, +m[0]);
-    });
-    return min;
+  /* ---------- elemente comune ---------- */
+
+  /* Liniile decorative inspirate din logo. */
+  MC.swirl = function (cls) {
+    return '<svg class="swirl ' + (cls || '') + '" viewBox="0 0 600 400" fill="none" aria-hidden="true">' +
+      '<ellipse cx="300" cy="200" rx="250" ry="120" transform="rotate(-18 300 200)"/>' +
+      '<ellipse cx="290" cy="210" rx="200" ry="150" transform="rotate(24 290 210)"/>' +
+      '<path d="M40 300c120-80 260 40 380-30s120-90 150-60"/>' +
+      '<path d="M90 120c80 40 120 160 230 150s170-120 230-90"/></svg>';
+  };
+  function icon(name) { return '<span class="ico">' + MC.ICONS[name] + '</span>'; }
+  function pageHero(eyebrow, title, lead) {
+    return '<section class="page-hero"><div class="wrap">' + MC.swirl() +
+      '<p class="eyebrow">' + eyebrow + '</p><h1>' + title + '</h1>' + (lead ? '<p class="lead">' + lead + '</p>' : '') +
+      '</div></section>';
   }
 
   /* ---------- Acasă ---------- */
 
   function home() {
     var free = nextFree(4);
+    var examples = { kineto: ['k01', 'k04', 'k05'], masaj: ['m06', 'm01', 'm11'], fizio: ['f05', 'f06', 'f02'], neuro: ['n06', 'n12', 'n05'] };
+    var methods = ['RPG', 'Schroth', 'Tecar', 'Deep Oscillation', 'Neurofeedback', 'Brainmap', 'EEG', 'Kinesio taping',
+      'Drenaj limfatic', 'Reflexoterapie', 'Laserterapie', 'Magnetoterapie', 'Ultrasunete', 'Recuperare ATM'];
     return '' +
-      '<section class="hero wrap">' +
-        '<div class="hero-text">' +
-          '<p class="eyebrow">Recuperare medicală · Suceava</p>' +
-          '<h1>Recuperare, terapie și neurologie, în centrul Sucevei.</h1>' +
-          '<p class="lead">Kinetoterapie, masaj terapeutic, fizioterapie, neurofeedback și consultații de neurologie și psihiatrie. ' +
-          'Alegi serviciul, ziua și ora, iar programarea e gata în mai puțin de un minut.</p>' +
-          '<div class="hero-cta">' +
-            '<a class="btn primary" href="#programare">Programează-te online</a>' +
-            '<a class="btn ghost" href="#servicii">Vezi serviciile și prețurile</a>' +
+      '<section class="hero">' + MC.swirl('hero-swirl') +
+        '<div class="wrap hero-in">' +
+          '<div class="hero-text anim">' +
+            '<p class="eyebrow light">Recuperare medicală · Suceava</p>' +
+            '<h1>Recuperare, terapie și neurologie, <em>în centrul Sucevei.</em></h1>' +
+            '<p class="lead">Kinetoterapie, masaj terapeutic, fizioterapie, neurofeedback și consultații de neurologie și psihiatrie, într-un singur loc.</p>' +
+            '<div class="hero-cta">' +
+              '<a class="btn sand big" href="#programare">Programează-te online ' + MC.ICONS.arrow + '</a>' +
+              '<a class="btn outline-light big" href="' + C.phoneHref + '">' + MC.ICONS.phone + C.phone + '</a>' +
+            '</div>' +
+            '<ul class="facts">' +
+              '<li>' + icon('pin') + '<span><small>Adresă</small>' + C.address + '</span></li>' +
+              '<li>' + icon('clock') + '<span><small>Program</small>' + C.hours + '</span></li>' +
+            '</ul>' +
           '</div>' +
-          '<dl class="facts">' +
-            '<div><dt>Adresă</dt><dd>' + C.address + '</dd></div>' +
-            '<div><dt>Program</dt><dd>' + C.hours + '</dd></div>' +
-            '<div><dt>Telefon</dt><dd><a href="' + C.phoneHref + '">' + C.phone + '</a></dd></div>' +
-          '</dl>' +
+          '<div class="hero-visual anim d2">' +
+            '<div class="photo hero-photo">' + MC.swirl() + '<span class="photo-icons">' +
+              MC.CATS.map(function (c) { return '<i style="--cat:' + c.color + '">' + MC.ICONS[c.icon] + '</i>'; }).join('') + '</span></div>' +
+            '<span class="float-badge">' + MC.ICONS.check + 'Programări online non-stop</span>' +
+            '<aside class="nextfree" aria-label="Primele ore libere">' +
+              '<h2>Primele ore libere</h2>' +
+              '<ul>' + free.map(function (x) {
+                var c = MC.catById(x.cat);
+                return '<li><button class="nf" style="--cat:' + c.color + '" data-action="quick-book" data-svc="' + x.svc.id + '" data-date="' + x.date + '" data-hour="' + x.hour + '">' +
+                  '<span class="nf-ico">' + MC.ICONS[c.icon] + '</span>' +
+                  '<span class="nf-main"><b>' + c.short + '</b><small>' + MC.cap(MC.fmtDate(x.date)) + '</small></span>' +
+                  '<span class="nf-time">' + MC.hourLabel(x.hour) + '</span></button></li>';
+              }).join('') + '</ul>' +
+            '</aside>' +
+          '</div>' +
         '</div>' +
-        '<aside class="nextfree" aria-label="Primele ore libere">' +
-          '<h2>Primele ore libere</h2>' +
-          '<ul>' + free.map(function (x) {
-            var c = MC.catById(x.cat);
-            return '<li><button class="nf" data-action="quick-book" data-svc="' + x.svc.id + '" data-date="' + x.date + '" data-hour="' + x.hour + '">' +
-              '<span class="dot" style="background:' + c.color + '"></span>' +
-              '<span class="nf-main"><b>' + c.short + '</b><small>' + MC.cap(MC.fmtDate(x.date)) + '</small></span>' +
-              '<span class="nf-time">' + MC.hourLabel(x.hour) + '</span></button></li>';
-          }).join('') + '</ul>' +
-          '<p class="small muted">Apasă pe o oră ca să te programezi direct.</p>' +
-        '</aside>' +
       '</section>' +
 
-      '<section class="band"><div class="wrap">' +
-        '<h2 class="section-title">Ce tratăm</h2>' +
+      '<section class="stats"><div class="wrap stats-in">' +
+        '<div><b>' + MC.SERVICES.length + '</b><span>servicii și pachete</span></div>' +
+        '<div><b>' + MC.CATS.length + '</b><span>secții medicale</span></div>' +
+        '<div><b>09–20</b><span>program zilnic</span></div>' +
+        '<div><b>1 min</b><span>durează programarea</span></div>' +
+      '</div></section>' +
+
+      '<section class="sec"><div class="wrap">' +
+        '<div class="sec-head rv"><p class="eyebrow">Servicii</p><h2>Cu ce te putem ajuta</h2>' +
+          '<p class="muted">Patru secții, de la recuperare după accidentări până la evaluări neurologice.</p></div>' +
         '<div class="cats">' + MC.CATS.map(function (c) {
-          var n = MC.SERVICES.filter(function (s) { return s.cat === c.id; }).length;
-          return '<a class="cat" href="#servicii" data-action="goto-cat" data-cat="' + c.id + '" style="--cat:' + c.color + '">' +
-            '<h3>' + c.name + '</h3><p>' + c.blurb + '</p>' +
-            '<span class="cat-meta">' + n + ' servicii · de la ' + fromPrice(c.id) + ' lei</span></a>';
+          return '<article class="cat rv" style="--cat:' + c.color + '">' +
+            '<div class="photo cat-photo">' + MC.swirl() + '<span class="cat-ico">' + MC.ICONS[c.icon] + '</span></div>' +
+            '<div class="cat-body"><h3>' + c.name + '</h3><p>' + c.blurb + '</p>' +
+            '<ul class="cat-list">' + examples[c.id].map(function (id) {
+              var sv = MC.serviceById(id);
+              return '<li><span>' + MC.esc(sv.name.replace(/\s*\(.*\)/, '')) + (sv.durLabel ? ' · ' + sv.durLabel : '') + '</span><b>' + sv.price.replace(/ \/ .*/, '') + '</b></li>';
+            }).join('') + '</ul>' +
+            '<a class="cat-link" href="#servicii" data-action="goto-cat" data-cat="' + c.id + '">Toate cele ' +
+              MC.SERVICES.filter(function (s) { return s.cat === c.id; }).length + ' servicii ' + MC.ICONS.arrow + '</a></div>' +
+          '</article>';
         }).join('') + '</div>' +
       '</div></section>' +
 
-      '<section class="wrap how">' +
-        '<h2 class="section-title">Cum te programezi</h2>' +
+      '<section class="sec methods-sec"><div class="wrap methods rv">' +
+        '<div><p class="eyebrow">Metode și aparatură</p><h2>Ce folosim în terapie</h2></div>' +
+        '<ul class="method-chips">' + methods.map(function (m, i) {
+          return '<li style="--cat:' + MC.CATS[i % 4].color + '">' + m + '</li>';
+        }).join('') + '</ul>' +
+      '</div></section>' +
+
+      '<section class="sec"><div class="wrap">' +
+        '<div class="sec-head rv"><p class="eyebrow">Programare online</p><h2>Simplu, în 3 pași</h2></div>' +
         '<ol class="steps-list">' +
-          '<li><b>Alegi serviciul</b><span>Din lista de terapii și consultații, cu durata și prețul afișate.</span></li>' +
-          '<li><b>Alegi ziua și ora</b><span>Vezi doar orele cu locuri libere, actualizate în timp real.</span></li>' +
-          '<li><b>Lași numele și telefonul</b><span>Programarea apare imediat în agenda clinicii.</span></li>' +
+          '<li class="rv"><b>Alegi serviciul</b><span>Din lista de terapii și consultații, cu durata și prețul afișate.</span></li>' +
+          '<li class="rv"><b>Alegi ziua și ora</b><span>Vezi doar orele cu locuri libere, actualizate în timp real.</span></li>' +
+          '<li class="rv"><b>Lași numele și telefonul</b><span>Programarea apare imediat în agenda clinicii.</span></li>' +
         '</ol>' +
-        '<a class="btn primary" href="#programare">Începe programarea</a>' +
-      '</section>';
+      '</div></section>' +
+
+      ctaBand();
+  }
+
+  function ctaBand() {
+    return '<section class="cta-band">' + MC.swirl() + '<div class="wrap cta-in rv">' +
+      '<div><h2>Programează-te acum</h2><p>Alegi ora care ți se potrivește, fără apeluri și fără așteptare.</p></div>' +
+      '<div class="hero-cta"><a class="btn sand big" href="#programare">Programează-te online ' + MC.ICONS.arrow + '</a>' +
+      '<a class="btn outline-light big" href="' + C.phoneHref + '">' + MC.ICONS.phone + C.phone + '</a></div>' +
+      '</div></section>';
   }
 
   /* ---------- Servicii și prețuri ---------- */
 
   function services() {
     var active = MC.ui.servicesCat || 'toate';
-    var tabs = [{ id: 'toate', short: 'Toate' }].concat(MC.CATS);
+    var tabs = [{ id: 'toate', short: 'Toate', color: '#50677a' }].concat(MC.CATS);
     var cats = active === 'toate' ? MC.CATS : [MC.catById(active)];
-    return '<section class="wrap page">' +
-      '<p class="eyebrow">Listă de prețuri</p>' +
-      '<h1>Servicii și prețuri</h1>' +
-      '<p class="lead">Pachetele se plătesc integral, iar fiecare ședință din pachet se programează separat.</p>' +
+    return pageHero('Listă de prețuri', 'Servicii și prețuri', 'Pachetele se plătesc integral, iar fiecare ședință din pachet se programează separat.') +
+      '<section class="wrap page">' +
       '<div class="chips" role="tablist">' + tabs.map(function (t) {
-        return '<button class="chip' + (t.id === active ? ' on' : '') + '" data-action="svc-tab" data-cat="' + t.id + '">' + t.short + '</button>';
+        return '<button class="chip' + (t.id === active ? ' on' : '') + '" style="--cat:' + t.color + '" data-action="svc-tab" data-cat="' + t.id + '">' +
+          (t.icon ? '<span class="chip-ico">' + MC.ICONS[t.icon] + '</span>' : '') + t.short + '</button>';
       }).join('') + '</div>' +
       cats.map(function (c) {
         var list = MC.SERVICES.filter(function (s) { return s.cat === c.id; });
         var single = list.filter(function (s) { return !s.pkg; });
         var pk = list.filter(function (s) { return s.pkg; });
-        return '<div class="pricelist" style="--cat:' + c.color + '"><h2>' + c.name + '</h2>' +
+        return '<div class="pricelist rv" style="--cat:' + c.color + '"><div class="pl-head"><span class="pl-ico">' + MC.ICONS[c.icon] + '</span><h2>' + c.name + '</h2></div>' +
           rows(single) + (pk.length ? '<h3 class="pk-title">Pachete</h3>' + rows(pk) : '') + '</div>';
       }).join('') +
-      '</section>';
+      '</section>' + ctaBand();
   }
   function rows(list) {
     return '<ul class="prices">' + list.map(function (s) {
       return '<li><div class="p-name">' + MC.esc(s.name) + (s.durLabel ? '<small>' + s.durLabel + '</small>' : '') + '</div>' +
         '<div class="p-price">' + s.price + '</div>' +
-        '<button class="btn small" data-action="book-svc" data-svc="' + s.id + '">Programează</button></li>';
+        '<button class="btn small soft" data-action="book-svc" data-svc="' + s.id + '">Programează</button></li>';
     }).join('') + '</ul>';
   }
 
   /* ---------- Contact ---------- */
 
   function contact() {
-    return '<section class="wrap page contact">' +
-      '<p class="eyebrow">Contact</p><h1>Ne găsești în centrul Sucevei</h1>' +
-      '<div class="contact-grid">' +
-        '<div class="card"><h3>Adresă</h3><p>' + C.address + '<br><span class="muted">' + MC.cap(C.area) + '</span></p>' +
-          '<a class="btn ghost small" href="' + C.mapsUrl + '" target="_blank" rel="noopener">Deschide în Google Maps</a></div>' +
-        '<div class="card"><h3>Telefon</h3><p class="big"><a href="' + C.phoneHref + '">' + C.phone + '</a></p>' +
-          '<p class="muted small">Pentru întrebări sau dacă preferi să te programezi telefonic.</p></div>' +
-        '<div class="card"><h3>Program</h3><p class="big">' + C.hours + '</p></div>' +
-      '</div>' +
-      '<a class="btn primary" href="#programare">Programează-te online</a>' +
-      '</section>';
+    return pageHero('Contact', 'Ne găsești în centrul Sucevei', '') +
+      '<section class="wrap page"><div class="contact-grid">' +
+        '<div class="info-card rv">' + MC.swirl() +
+          '<div class="info-row">' + icon('pin') + '<div><small>Adresă</small><p>' + C.address + '<br>' + MC.cap(C.area) + '</p></div></div>' +
+          '<div class="info-row">' + icon('phone') + '<div><small>Telefon</small><p class="big"><a href="' + C.phoneHref + '">' + C.phone + '</a></p></div></div>' +
+          '<div class="info-row">' + icon('clock') + '<div><small>Program</small><p class="big">' + C.hours + '</p></div></div>' +
+          '<a class="btn sand big" href="#programare">Programează-te online ' + MC.ICONS.arrow + '</a>' +
+        '</div>' +
+        '<a class="map-card rv" href="' + C.mapsUrl + '" target="_blank" rel="noopener">' +
+          '<svg class="map-art" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+            '<rect width="400" height="300" class="m-bg"/>' +
+            '<path class="m-park" d="M250 30h110v80H250z"/>' +
+            '<path class="m-road big" d="M-10 190L410 130"/><path class="m-road" d="M120 -10L170 310"/>' +
+            '<path class="m-road" d="M290 -10L250 310"/><path class="m-road thin" d="M-10 80L410 60"/><path class="m-road thin" d="M-10 260L410 240"/>' +
+          '</svg>' +
+          '<span class="map-pin">' + MC.ICONS.pin + '</span>' +
+          '<span class="map-label"><b>Str. Vasile Alecsandri nr. 10</b><span>Deschide în Google Maps ' + MC.ICONS.arrow + '</span></span>' +
+        '</a>' +
+      '</div></section>';
   }
 
   /* ---------- Programare online ---------- */
@@ -177,8 +228,8 @@ window.MC = window.MC || {};
     }).join('') + '</ol>';
 
     var body = b.step === 1 ? stepService() : b.step === 2 ? stepDate(svc) : stepDetails(svc);
-    return '<section class="wrap page booking">' +
-      '<p class="eyebrow">Programare online</p><h1>Programează-te</h1>' + steps +
+    return pageHero('Programare online', 'Programează-te', 'Alege serviciul, ziua și ora. Durează mai puțin de un minut.') +
+      '<section class="wrap page booking">' + steps +
       '<div class="bk-grid"><div class="bk-main">' + body + '</div>' + summary(svc) + '</div></section>';
   }
 
@@ -187,10 +238,11 @@ window.MC = window.MC || {};
     var list = MC.SERVICES.filter(function (s) { return s.cat === b.cat; });
     return '<div class="card"><h2 class="card-title">Ce serviciu dorești?</h2>' +
       '<div class="chips">' + MC.CATS.map(function (c) {
-        return '<button class="chip' + (c.id === b.cat ? ' on' : '') + '" data-action="bk-cat" data-cat="' + c.id + '">' + c.short + '</button>';
+        return '<button class="chip' + (c.id === b.cat ? ' on' : '') + '" style="--cat:' + c.color + '" data-action="bk-cat" data-cat="' + c.id + '">' +
+          '<span class="chip-ico">' + MC.ICONS[c.icon] + '</span>' + c.short + '</button>';
       }).join('') + '</div>' +
       '<ul class="svc-pick">' + list.map(function (s) {
-        return '<li><button class="svc' + (s.id === b.serviceId ? ' on' : '') + '" data-action="bk-svc" data-svc="' + s.id + '">' +
+        return '<li><button class="svc' + (s.id === b.serviceId ? ' on' : '') + '" style="--cat:' + MC.catById(s.cat).color + '" data-action="bk-svc" data-svc="' + s.id + '">' +
           '<span class="svc-name">' + MC.esc(s.name) + (s.durLabel ? '<small>' + s.durLabel + '</small>' : '') + '</span>' +
           '<span class="svc-price">' + s.price + '</span></button></li>';
       }).join('') + '</ul></div>';
@@ -284,6 +336,7 @@ window.MC = window.MC || {};
     var svc = MC.serviceById(d.serviceId);
     return '<section class="wrap page booking done">' +
       '<div class="card done-card">' +
+        '<span class="done-check">' + MC.ICONS.check + '</span>' +
         '<p class="eyebrow">Programare înregistrată</p>' +
         '<h1>Te așteptăm ' + MC.fmtDate(d.date) + ', la ' + MC.hourLabel(d.hour) + '.</h1>' +
         '<div class="sum-row"><span>Serviciu</span><b>' + MC.esc(svc.name) + '</b></div>' +

@@ -7,7 +7,7 @@ window.MC = window.MC || {};
 
   function route() {
     var h = (location.hash || '').replace('#', '');
-    return ROUTES.indexOf(h) >= 0 ? h : 'acasa';
+    return ROUTES.indexOf(h) >= 0 ? h : (document.body.dataset.home || 'acasa');
   }
 
   MC.go = function (name) {
@@ -27,7 +27,29 @@ window.MC = window.MC || {};
     var titles = { acasa: 'Medicenter Clinic', servicii: 'Servicii și prețuri', programare: 'Programare online', contact: 'Contact', admin: 'Agenda clinicii' };
     document.title = titles[r] + (r === 'acasa' ? ' · Suceava' : ' · Medicenter Clinic');
     document.getElementById('menu').classList.remove('open');
+    reveal();
   };
+
+  /* Secțiile urcă ușor în pagină când ajung pe ecran. Conținutul rămâne vizibil și fără animație. */
+  var io = null;
+  function reveal() {
+    var els = document.querySelectorAll('.rv');
+    if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!io) {
+      io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+        });
+      }, { threshold: 0.12 });
+    }
+    els.forEach(function (el, i) {
+      var r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight) return; // deja pe ecran: fără animație
+      el.classList.add('pre');
+      el.style.transitionDelay = (i % 4) * 0.08 + 's';
+      io.observe(el);
+    });
+  }
 
   function init() {
     var app = document.getElementById('app');

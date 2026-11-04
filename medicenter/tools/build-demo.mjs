@@ -11,7 +11,6 @@ const html = read('index.html');
 const body = html.split('<!-- BODY:START -->')[1].split('<!-- BODY:END -->')[0];
 const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => read(m[1]));
 const fonts = html.match(/<link rel="stylesheet" href="(https:\/\/fonts[^"]+)">/)[1];
-const logo = 'data:image/png;base64,' + readFileSync(join(root, 'img/logo.png')).toString('base64');
 
 const out = [
   '<title>Medicenter Clinic</title>',
@@ -20,7 +19,7 @@ const out = [
   `<style>\n${read('css/style.css')}\n</style>`,
   body.trim(),
   `<script>\n${scripts.join('\n')}\n</script>`
-].join('\n').replaceAll('img/logo.png', logo);
+].join('\n').replaceAll('href="agenda.html"', 'href="#admin"').replace(/img\/[\w-]+\.png/g, (p) => 'data:image/png;base64,' + readFileSync(join(root, p)).toString('base64'));
 
 mkdirSync(join(root, 'dist'), { recursive: true });
 writeFileSync(join(root, 'dist/medicenter-demo.html'), out);
