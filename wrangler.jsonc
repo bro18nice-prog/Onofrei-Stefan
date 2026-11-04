@@ -1,0 +1,9 @@
+// Publicarea site-ului Medicenter pe Cloudflare (Workers cu fișiere statice).
+// În Cloudflare: Build command gol, Deploy command: npx wrangler deploy
+{
+  "name": "medicenter",
+  "compatibility_date": "2025-10-01",
+  "assets": {
+    "directory": "./medicenter"
+  }
+}

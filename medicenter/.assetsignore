@@ -1,0 +1,6 @@
+# Fișiere din proiect care nu se publică pe site.
+README.md
+supabase
+tools
+dist
+.assetsignore
