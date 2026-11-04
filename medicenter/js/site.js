@@ -301,11 +301,11 @@ window.MC = window.MC || {};
     return '<form class="card form" id="bk-form" novalidate>' +
       '<h2 class="card-title">Datele tale</h2>' +
       '<label for="bk-name">Nume și prenume</label>' +
-      '<input id="bk-name" name="name" autocomplete="name" required value="' + MC.esc(b.name) + '">' +
+      '<input id="bk-name" name="name" autocomplete="name" maxlength="120" required value="' + MC.esc(b.name) + '">' +
       '<label for="bk-phone">Telefon</label>' +
       '<input id="bk-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="07xx xxx xxx" required value="' + MC.esc(b.phone) + '">' +
       '<label for="bk-note">Observații <span class="muted">(opțional)</span></label>' +
-      '<textarea id="bk-note" name="note" rows="3" placeholder="Ex.: prima ședință, recomandare medicală">' + MC.esc(b.note) + '</textarea>' +
+      '<textarea id="bk-note" name="note" rows="3" maxlength="500" placeholder="Ex.: prima ședință. Te rugăm să nu scrii detalii medicale.">' + MC.esc(b.note) + '</textarea>' +
       '<label class="check" for="bk-gdpr"><input type="checkbox" id="bk-gdpr" name="gdpr"' + (b.gdpr ? ' checked' : '') + '>' +
       '<span>Sunt de acord ca Medicenter Clinic să folosească aceste date pentru gestionarea programării. <a href="#confidentialitate" target="_blank">Politica de confidențialitate</a></span></label>' +
       '<p class="form-error" id="bk-error" role="alert" hidden></p>' +

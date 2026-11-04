@@ -1,0 +1,3 @@
+# Site în pregătire: nu indexa. La lansare se înlocuiește cu „Allow: /”.
+User-agent: *
+Disallow: /

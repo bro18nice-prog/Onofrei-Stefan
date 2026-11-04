@@ -29,6 +29,10 @@ window.MC = window.MC || {};
     PAST: 'Ora aleasă a trecut deja.',
     TOO_FAR: 'Data este prea departe în viitor.',
     LIMIT: 'Există deja mai multe programări pe acest număr de telefon. Sună-ne pentru alte programări.',
+    BUSY: 'Sunt multe programări în acest moment. Încearcă din nou peste câteva minute sau sună-ne.',
+    BAD_PHONE: 'Numărul de telefon nu pare corect. Folosește formatul 07xx xxx xxx.',
+    BAD_SERVICE: 'Serviciul ales nu este valid. Reîncarcă pagina și încearcă din nou.',
+    BAD_INPUT: 'Verifică numele și observațiile (maximum 500 de caractere).',
     NOT_STAFF: 'Contul nu are acces la agendă.',
     NOT_FOUND: 'Programarea nu mai există.'
   };
@@ -39,7 +43,7 @@ window.MC = window.MC || {};
     if (/Invalid login credentials/i.test(m)) return 'Emailul sau parola nu sunt corecte.';
     if (/Email not confirmed/i.test(m)) return 'Emailul nu este confirmat încă. Deschide linkul primit pe email.';
     if (/User already registered/i.test(m)) return 'Există deja un cont cu acest email. Folosește „Am uitat parola”.';
-    if (/Password should be/i.test(m)) return 'Parola trebuie să aibă cel puțin 6 caractere.';
+    if (/Password should be/i.test(m)) return 'Parola trebuie să aibă cel puțin 8 caractere.';
     if (/fetch|network/i.test(m)) return 'Nu există conexiune la internet. Încearcă din nou.';
     return m;
   }

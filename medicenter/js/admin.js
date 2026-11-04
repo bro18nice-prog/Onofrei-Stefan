@@ -51,7 +51,7 @@ window.MC = window.MC || {};
 
     if (MC.store.isRecovery()) {
       return head + '<h1>Parolă nouă</h1><p class="muted">Alege parola cu care vei intra în agendă.</p>' +
-        '<label for="adm-pass">Parola nouă</label><input id="adm-pass" type="password" autocomplete="new-password" minlength="6" required>' +
+        '<label for="adm-pass">Parola nouă</label><input id="adm-pass" type="password" autocomplete="new-password" minlength="8" required>' +
         '<p class="form-error" id="adm-error" role="alert" hidden></p>' +
         '<button class="btn primary block" type="submit">Salvează parola</button>' + foot;
     }
@@ -69,7 +69,7 @@ window.MC = window.MC || {};
     if (a === 'signup') {
       return head + '<h1>Cont nou pentru personal</h1><p class="muted">Folosește emailul trecut de administrator în lista personalului.</p>' +
         '<label for="adm-email">Email</label><input id="adm-email" type="email" autocomplete="email" required>' +
-        '<label for="adm-pass">Alege o parolă</label><input id="adm-pass" type="password" autocomplete="new-password" minlength="6" required>' +
+        '<label for="adm-pass">Alege o parolă</label><input id="adm-pass" type="password" autocomplete="new-password" minlength="8" required>' +
         '<p class="form-error" id="adm-error" role="alert" hidden></p>' +
         '<button class="btn primary block" type="submit">Creează contul</button>' +
         '<button type="button" class="link-btn" data-action="adm-auth" data-to="login">Am deja cont</button>' + foot;
@@ -458,7 +458,9 @@ window.MC = window.MC || {};
       var email = val('adm-email');
       var pass = val('adm-pass');
       if (mode !== 'recovery' && MC.store.live && !/^\S+@\S+\.\S+$/.test(email)) { showErr('adm-error', 'Scrie o adresă de email corectă.'); return true; }
-      if ((mode === 'signup' || mode === 'recovery') && pass.length < 6) { showErr('adm-error', 'Parola trebuie să aibă cel puțin 6 caractere.'); return true; }
+      if ((mode === 'signup' || mode === 'recovery') && (pass.length < 8 || !/\d/.test(pass) || !/[a-zA-Z]/.test(pass))) {
+        showErr('adm-error', 'Parola trebuie să aibă cel puțin 8 caractere, cu litere și cifre.'); return true;
+      }
       if (mode === 'recovery') {
         run(MC.store.updatePassword(pass), 'Parola a fost salvată.', 'adm-error').then(function () {
           history.replaceState(null, '', location.pathname + '#admin'); MC.render();

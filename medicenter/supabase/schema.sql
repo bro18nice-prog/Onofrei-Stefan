@@ -123,10 +123,21 @@ declare
   staff boolean := private.is_staff();
   s jsonb;
   local_now timestamp := now() at time zone 'Europe/Bucharest';
+  digits text := regexp_replace(coalesce(p_phone, ''), '[^0-9+]', '', 'g');
   new_id uuid;
 begin
+  -- serviciul trebuie să aparțină secției (k = kineto, m = masaj, f = fizio, n = neuro)
+  if left(p_service_id, 1) <> left(p_cat, 1) or p_hours not between 1 and 2 then
+    raise exception 'BAD_SERVICE';
+  end if;
   if not staff then
     select data into s from public.settings where id = 1;
+    if digits !~ '^(\+40|0040|0)[237][0-9]{8}$' then
+      raise exception 'BAD_PHONE';
+    end if;
+    if char_length(trim(p_name)) < 3 or char_length(coalesce(p_note, '')) > 500 then
+      raise exception 'BAD_INPUT';
+    end if;
     if p_date < local_now::date or (p_date = local_now::date and p_hour <= extract(hour from local_now)) then
       raise exception 'PAST';
     end if;
@@ -135,6 +146,10 @@ begin
     end if;
     if (select count(*) from public.bookings where phone = trim(p_phone) and date >= local_now::date) >= 5 then
       raise exception 'LIMIT';
+    end if;
+    -- protecție împotriva umplerii agendei cu programări false
+    if (select count(*) from public.bookings where source = 'online' and created_at > now() - interval '10 minutes') >= 20 then
+      raise exception 'BUSY';
     end if;
   end if;
   perform private.check_capacity(p_cat, p_date, p_hour, p_hours, null);
@@ -197,6 +212,20 @@ grant execute on function public.move_booking(uuid, date, int) to authenticated;
 grant execute on function public.get_availability(date, date) to anon, authenticated;
 grant execute on function public.book(text, text, date, int, int, text, text, text, text) to anon, authenticated;
 grant execute on function public.my_role() to anon, authenticated;
+
+-- ---------- păstrarea datelor (GDPR) ----------
+
+-- Programările mai vechi de 24 de luni se șterg automat, în fiecare noapte la 03:17.
+-- (Pe un Postgres fără pg_cron, blocul se sare.)
+do $$
+begin
+  create extension if not exists pg_cron;
+  perform cron.unschedule(jobid) from cron.job where jobname = 'medicenter-retentie';
+  perform cron.schedule('medicenter-retentie', '17 3 * * *',
+    $job$delete from public.bookings where date < current_date - interval '24 months'$job$);
+exception when others then
+  raise notice 'pg_cron indisponibil: %', sqlerrm;
+end $$;
 
 -- ---------- date inițiale ----------
 
