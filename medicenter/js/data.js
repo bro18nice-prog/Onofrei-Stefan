@@ -102,6 +102,16 @@ MC.SERVICES = [
   { id: 'n13', cat: 'neuro', name: 'EEG (electroencefalogramă) prelungit', dur: 120, durLabel: '120 min', price: '700 lei' }
 ];
 
+/* Locuri pe oră pentru fiecare terapie (valori inițiale; clinica le schimbă din agendă → Setări). */
+MC.DEFAULT_SERVICE_CAP = {
+  k01: 1, k02: 4, k03: 1, k04: 1, k05: 1, k06: 1, k07: 1, k08: 1, k09: 1, k10: 1, k11: 4, k12: 1, k13: 4, k14: 4, k15: 1,
+  m01: 1, m02: 1, m03: 1, m04: 1, m05: 1, m06: 1, m07: 1, m08: 1, m09: 1, m10: 1, m11: 2, m12: 1,
+  f01: 2, f02: 2, f03: 2, f04: 2, f05: 1, f06: 1, f07: 2, f08: 1, f09: 1, f10: 1,
+  n01: 1, n02: 1, n03: 1, n04: 1, n05: 1, n06: 1, n07: 1, n08: 1, n09: 1, n10: 1, n11: 1, n12: 1, n13: 1
+};
+/* Terapii care cer o evaluare făcută înainte la clinică: terapie → serviciul de evaluare. */
+MC.DEFAULT_EVAL = { k05: 'k06', k10: 'k06' };
+
 MC.serviceById = function (id) {
   return MC.SERVICES.find(function (s) { return s.id === id; });
 };

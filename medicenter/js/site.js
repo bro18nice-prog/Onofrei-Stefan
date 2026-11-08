@@ -15,7 +15,7 @@ window.MC = window.MC || {};
     var out = [];
     for (var h = s.open; h + hours <= s.close; h++) {
       if (isToday && h <= now.getHours()) continue;
-      var r = MC.store.check(svc.cat, date, h, hours);
+      var r = MC.store.check(svc.id, date, h, hours);
       out.push({ hour: h, free: r.ok ? r.free : 0 });
     }
     return out;
@@ -142,7 +142,7 @@ window.MC = window.MC || {};
         '<ol class="steps-list">' +
           '<li class="rv"><b>Alegi serviciul</b><span>Din lista de terapii și consultații, cu durata și prețul afișate.</span></li>' +
           '<li class="rv"><b>Alegi ziua și ora</b><span>Vezi doar orele cu locuri libere, actualizate în timp real.</span></li>' +
-          '<li class="rv"><b>Lași numele și telefonul</b><span>Programarea apare imediat în agenda clinicii.</span></li>' +
+          '<li class="rv"><b>Primești confirmarea</b><span>Clinica verifică cererea și te contactează telefonic sau pe WhatsApp.</span></li>' +
         '</ol>' +
       '</div></section>' +
 
@@ -212,7 +212,24 @@ window.MC = window.MC || {};
 
   /* ---------- Programare online ---------- */
 
-  MC.bk = { step: 1, cat: 'kineto', serviceId: null, date: null, hour: null, month: null, name: '', phone: '', note: '', gdpr: false, done: null, sending: false };
+  var AVAIL = [
+    { id: 'dim', label: 'Dimineața (9–12)' },
+    { id: 'pranz', label: 'La prânz (12–16)' },
+    { id: 'dupa16', label: 'După 16:00' },
+    { id: 'oricand', label: 'Oricând' }
+  ];
+  function freshBooking() {
+    return { step: 1, cat: 'kineto', serviceId: null, date: null, hour: null, month: null,
+      evalAnswer: null, forChild: false, childName: '', childAge: '', name: '', phone: '',
+      avail: [], availText: '', note: '', gdpr: false, done: null, sending: false };
+  }
+  MC.bk = freshBooking();
+
+  /* Ce evaluare cere terapia aleasă (sau null). */
+  function needsEval(svc) {
+    var id = svc && MC.store.evalFor(svc.id);
+    return id ? MC.serviceById(id) : null;
+  }
 
   function booking() {
     var b = MC.bk;
@@ -227,15 +244,16 @@ window.MC = window.MC || {};
         '<i>' + (n < b.step ? '✓' : n) + '</i>' + l + (can ? '</button>' : '</span>') + '</li>';
     }).join('') + '</ol>';
 
-    var body = b.step === 1 ? stepService() : b.step === 2 ? stepDate(svc) : stepDetails(svc);
-    return pageHero('Programare online', 'Programează-te', 'Alege serviciul, ziua și ora. Durează mai puțin de un minut.') +
+    var body = b.step === 1 ? stepService(svc) : b.step === 2 ? stepDate(svc) : stepDetails(svc);
+    return pageHero('Programare online', 'Programează-te', 'Alege serviciul și ora dorită. Clinica îți confirmă programarea.') +
       '<section class="wrap page booking">' + steps +
       '<div class="bk-grid"><div class="bk-main">' + body + '</div>' + summary(svc) + '</div></section>';
   }
 
-  function stepService() {
+  function stepService(svc) {
     var b = MC.bk;
     var list = MC.SERVICES.filter(function (s) { return s.cat === b.cat; });
+    var ev = needsEval(svc);
     return '<div class="card"><h2 class="card-title">Ce serviciu dorești?</h2>' +
       '<div class="chips">' + MC.CATS.map(function (c) {
         return '<button class="chip' + (c.id === b.cat ? ' on' : '') + '" style="--cat:' + c.color + '" data-action="bk-cat" data-cat="' + c.id + '">' +
@@ -243,9 +261,19 @@ window.MC = window.MC || {};
       }).join('') + '</div>' +
       '<ul class="svc-pick">' + list.map(function (s) {
         return '<li><button class="svc' + (s.id === b.serviceId ? ' on' : '') + '" style="--cat:' + MC.catById(s.cat).color + '" data-action="bk-svc" data-svc="' + s.id + '">' +
-          '<span class="svc-name">' + MC.esc(s.name) + (s.durLabel ? '<small>' + s.durLabel + '</small>' : '') + '</span>' +
+          '<span class="svc-name">' + MC.esc(s.name) + (s.durLabel ? '<small>' + s.durLabel + '</small>' : '') +
+          (MC.store.evalFor(s.id) ? '<small class="eval-tag">necesită evaluare înainte</small>' : '') + '</span>' +
           '<span class="svc-price">' + s.price + '</span></button></li>';
-      }).join('') + '</ul></div>';
+      }).join('') + '</ul></div>' +
+      (ev ? '<div class="card eval-card">' +
+        '<h3>Înainte de această terapie este necesară o evaluare cu medicul</h3>' +
+        '<p>Evaluarea (<b>' + MC.esc(ev.name) + '</b>, ' + ev.price + ') se face o singură dată, la clinică, înainte de prima ședință.</p>' +
+        '<div class="eval-choices">' +
+          '<button class="choice' + (b.evalAnswer === 'yes' ? ' on' : '') + '" data-action="bk-eval" data-v="yes">' + MC.ICONS.check +
+            '<span><b>Am făcut deja evaluarea la Medicenter</b><small>Medicul verifică acest lucru la confirmare.</small></span></button>' +
+          '<button class="choice" data-action="bk-eval-book" data-svc="' + ev.id + '">' + MC.ICONS.arrow +
+            '<span><b>Nu am făcut-o încă</b><small>Programează întâi evaluarea.</small></span></button>' +
+        '</div></div>' : '');
   }
 
   function stepDate(svc) {
@@ -276,10 +304,10 @@ window.MC = window.MC || {};
     if (b.date) {
       var slots = MC.slotsFor(svc, b.date);
       slotsHtml = slots.length ? '<div class="slots">' + slots.map(function (x) {
-        if (x.free <= 0) return '<span class="slot full">' + MC.hourLabel(x.hour) + '<small>Complet</small></span>';
+        if (x.free <= 0) return '<span class="slot full">' + MC.hourLabel(x.hour) + '<small>Ocupat</small></span>';
         var few = x.free === 1 ? ' few' : '';
         return '<button class="slot' + few + (x.hour === b.hour ? ' sel' : '') + '" data-action="bk-hour" data-hour="' + x.hour + '">' +
-          MC.hourLabel(x.hour) + '<small>' + (x.free === 1 ? '1 loc liber' : x.free + ' locuri libere') + '</small></button>';
+          MC.hourLabel(x.hour) + '<small>' + (x.free === 1 ? 'liber' : x.free + ' locuri libere') + '</small></button>';
       }).join('') + '</div>' : '<p class="muted">Nu mai sunt ore disponibile în această zi.</p>';
     }
 
@@ -288,29 +316,48 @@ window.MC = window.MC || {};
         '<div class="cal-nav"><button class="icon-btn" data-action="bk-month" data-dir="-1"' + (canPrev ? '' : ' disabled') + ' aria-label="Luna anterioară">‹</button>' +
         '<button class="icon-btn" data-action="bk-month" data-dir="1"' + (canNext ? '' : ' disabled') + ' aria-label="Luna următoare">›</button></div></div>' +
         '<div class="cal">' + cells + '</div>' +
-        '<div class="legend"><span><i class="lg free"></i>Ore libere</span><span><i class="lg sel"></i>Ziua aleasă</span><span><i class="lg full"></i>Complet / închis</span></div>' +
+        '<div class="legend"><span><i class="lg free"></i>Ore libere</span><span><i class="lg sel"></i>Ziua aleasă</span><span><i class="lg full"></i>Ocupat / închis</span></div>' +
       '</div>' +
-      '<div class="card"><h2 class="card-title">' + (b.date ? MC.cap(MC.fmtDate(b.date)) : 'Ora') + '</h2>' + slotsHtml + '</div>' +
+      '<div class="card"><h2 class="card-title">' + (b.date ? MC.cap(MC.fmtDate(b.date)) : 'Ora dorită') + '</h2>' + slotsHtml +
+        '<p class="muted small slot-note">Ora aleasă este o cerere. Clinica o confirmă sau îți propune altă oră.</p></div>' +
       '</div>' +
       '<div class="bk-actions"><button class="btn ghost" data-action="bk-step" data-step="1">Înapoi</button>' +
       '<button class="btn primary" data-action="bk-next"' + (b.date && b.hour != null ? '' : ' disabled') + '>Continuă</button></div>';
   }
 
-  function stepDetails() {
+  function stepDetails(svc) {
     var b = MC.bk;
+    var ages = '<option value="">Alege</option>';
+    for (var a = 0; a <= 17; a++) ages += '<option value="' + a + '"' + (String(b.childAge) === String(a) ? ' selected' : '') + '>' + (a === 0 ? 'sub 1 an' : a + (a === 1 ? ' an' : ' ani')) + '</option>';
     return '<form class="card form" id="bk-form" novalidate>' +
       '<h2 class="card-title">Datele tale</h2>' +
-      '<label for="bk-name">Nume și prenume</label>' +
+      '<p class="info-box">Programarea devine sigură după confirmarea clinicii. Te contactăm telefonic sau pe WhatsApp.</p>' +
+      '<fieldset class="who"><legend>Pentru cine este programarea?</legend>' +
+        '<label class="pill"><input type="radio" name="who" value="self" data-change="bk-who"' + (b.forChild ? '' : ' checked') + '><span>Pentru mine</span></label>' +
+        '<label class="pill"><input type="radio" name="who" value="child" data-change="bk-who"' + (b.forChild ? ' checked' : '') + '><span>Pentru copilul meu</span></label>' +
+      '</fieldset>' +
+      '<div id="bk-child-fields" class="row2"' + (b.forChild ? '' : ' hidden') + '>' +
+        '<div><label for="bk-child">Numele copilului</label><input id="bk-child" name="child" maxlength="120" value="' + MC.esc(b.childName) + '"></div>' +
+        '<div><label for="bk-age">Vârsta copilului</label><select id="bk-age" name="age">' + ages + '</select></div>' +
+      '</div>' +
+      '<label for="bk-name" id="bk-name-label">' + (b.forChild ? 'Numele părintelui' : 'Nume și prenume') + '</label>' +
       '<input id="bk-name" name="name" autocomplete="name" maxlength="120" required value="' + MC.esc(b.name) + '">' +
-      '<label for="bk-phone">Telefon</label>' +
+      '<label for="bk-phone">Telefon (WhatsApp, dacă ai)</label>' +
       '<input id="bk-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="07xx xxx xxx" required value="' + MC.esc(b.phone) + '">' +
+      '<fieldset class="avail"><legend>Când poți veni de obicei?</legend>' +
+        AVAIL.map(function (o) {
+          return '<label class="pill"><input type="checkbox" name="avail" value="' + o.id + '"' + (b.avail.indexOf(o.id) >= 0 ? ' checked' : '') + '><span>' + o.label + '</span></label>';
+        }).join('') +
+        '<input id="bk-avail" name="availText" maxlength="150" placeholder="Alte detalii (ex.: doar marți și joi, după școală)" value="' + MC.esc(b.availText) + '">' +
+      '</fieldset>' +
       '<label for="bk-note">Observații <span class="muted">(opțional)</span></label>' +
       '<textarea id="bk-note" name="note" rows="3" maxlength="500" placeholder="Ex.: prima ședință. Te rugăm să nu scrii detalii medicale.">' + MC.esc(b.note) + '</textarea>' +
+      (needsEval(svc) ? '<p class="info-box ok">Ai declarat că ai făcut evaluarea la Medicenter. Medicul verifică la confirmare.</p>' : '') +
       '<label class="check" for="bk-gdpr"><input type="checkbox" id="bk-gdpr" name="gdpr"' + (b.gdpr ? ' checked' : '') + '>' +
       '<span>Sunt de acord ca Medicenter Clinic să folosească aceste date pentru gestionarea programării. <a href="#confidentialitate" target="_blank">Politica de confidențialitate</a></span></label>' +
       '<p class="form-error" id="bk-error" role="alert" hidden></p>' +
       '<div class="bk-actions"><button type="button" class="btn ghost" data-action="bk-step" data-step="2">Înapoi</button>' +
-      '<button type="submit" class="btn primary">Confirmă programarea</button></div>' +
+      '<button type="submit" class="btn primary">Trimite cererea</button></div>' +
       '</form>';
   }
 
@@ -322,73 +369,144 @@ window.MC = window.MC || {};
       var mins = b.hour * 60 + (svc.dur || 60);
       end = MC.hourLabel(b.hour) + ' – ' + MC.pad(Math.floor(mins / 60)) + ':' + MC.pad(mins % 60);
     }
+    var ev = needsEval(svc);
+    var canGo = svc && (!ev || b.evalAnswer === 'yes');
     return '<aside class="card summary"><h2 class="card-title">Rezumat</h2>' +
       row('Serviciu', svc && MC.esc(svc.name)) +
       row('Preț', svc && svc.price) +
-      row('Data', b.date && MC.cap(MC.fmtDate(b.date, true))) +
-      row('Ora', end) +
-      (b.step === 1 ? '<button class="btn primary block" data-action="bk-next"' + (svc ? '' : ' disabled') + '>Continuă</button>' : '') +
+      row('Data dorită', b.date && MC.cap(MC.fmtDate(b.date, true))) +
+      row('Ora dorită', end) +
+      '<p class="sum-note">Se confirmă de clinică</p>' +
+      (b.step === 1 ? '<button class="btn primary block" data-action="bk-next"' + (canGo ? '' : ' disabled') + '>Continuă</button>' : '') +
       '</aside>';
   }
+
+  MC.statusUrl = function (token) {
+    return location.origin + location.pathname + '?cerere=' + encodeURIComponent(token) + '#status';
+  };
 
   function bookingDone() {
     var d = MC.bk.done;
     var svc = MC.serviceById(d.serviceId);
+    var url = MC.statusUrl(d.token);
     return '<section class="wrap page booking done">' +
       '<div class="card done-card">' +
-        '<span class="done-check">' + MC.ICONS.check + '</span>' +
-        '<p class="eyebrow">Programare înregistrată</p>' +
-        '<h1>Te așteptăm ' + MC.fmtDate(d.date) + ', la ' + MC.hourLabel(d.hour) + '.</h1>' +
+        '<span class="done-check wait">' + MC.ICONS.clock + '</span>' +
+        '<p class="eyebrow">Cerere trimisă</p>' +
+        '<h1>Am primit cererea pentru ' + MC.fmtDate(d.date) + ', ora ' + MC.hourLabel(d.hour) + '.</h1>' +
+        '<p>Clinica o verifică și te contactează telefonic sau pe WhatsApp pentru confirmare. Dacă ora nu e potrivită, îți propunem alta.</p>' +
         '<div class="sum-row"><span>Serviciu</span><b>' + MC.esc(svc.name) + '</b></div>' +
+        (d.childName ? '<div class="sum-row"><span>Pentru</span><b>' + MC.esc(d.childName) + '</b></div>' : '') +
         '<div class="sum-row"><span>Preț</span><b>' + svc.price + '</b></div>' +
-        '<div class="sum-row"><span>Nume</span><b>' + MC.esc(d.name) + '</b></div>' +
         '<div class="sum-row"><span>Telefon</span><b>' + MC.esc(d.phone) + '</b></div>' +
-        '<p class="muted">Adresa: ' + C.address + '. Dacă nu mai poți ajunge, sună-ne la ' +
-          '<a href="' + C.phoneHref + '">' + C.phone + '</a>.</p>' +
+        '<div class="status-link"><b>Starea cererii o vezi oricând aici:</b>' +
+          '<input id="status-url" readonly value="' + MC.esc(url) + '">' +
+          '<div class="row-actions"><button class="btn small soft" data-action="copy-status">Copiază linkul</button>' +
+          '<a class="btn small primary" href="' + MC.esc(url) + '">Vezi starea cererii</a></div></div>' +
+        '<p class="muted small">Adresa: ' + C.address + '. Pentru întrebări: <a href="' + C.phoneHref + '">' + C.phone + '</a>.</p>' +
         '<div class="bk-actions"><a class="btn ghost" href="#acasa">Înapoi la prima pagină</a>' +
-        '<button class="btn primary" data-action="bk-new">Fă altă programare</button></div>' +
+        '<button class="btn primary" data-action="bk-new">Altă cerere</button></div>' +
       '</div></section>';
+  }
+
+  /* Citește formularul în MC.bk, ca valorile să nu se piardă la re-randare. */
+  function grab(form) {
+    var b = MC.bk;
+    if (!form) return;
+    b.forChild = form.querySelector('input[name=who]:checked').value === 'child';
+    b.childName = form.child.value; b.childAge = form.age.value;
+    b.name = form.name.value; b.phone = form.phone.value; b.note = form.note.value; b.gdpr = form.gdpr.checked;
+    b.avail = [].slice.call(form.querySelectorAll('input[name=avail]:checked')).map(function (x) { return x.value; });
+    b.availText = form.availText.value;
   }
 
   function submitBooking(form) {
     var b = MC.bk;
     if (b.sending) return;
-    b.name = form.name.value; b.phone = form.phone.value; b.note = form.note.value; b.gdpr = form.gdpr.checked;
+    grab(form);
     var err = '';
-    if (b.name.trim().length < 3) err = 'Scrie numele și prenumele.';
+    if (b.forChild && b.childName.trim().length < 2) err = 'Scrie numele copilului.';
+    else if (b.forChild && b.childAge === '') err = 'Alege vârsta copilului.';
+    else if (b.name.trim().length < 3) err = b.forChild ? 'Scrie numele părintelui.' : 'Scrie numele și prenumele.';
     else if (!MC.validPhone(b.phone)) err = 'Numărul de telefon nu pare corect. Folosește formatul 07xx xxx xxx.';
-    else if (!b.gdpr) err = 'Bifează acordul pentru folosirea datelor ca să putem înregistra programarea.';
+    else if (!b.gdpr) err = 'Bifează acordul pentru folosirea datelor ca să putem înregistra cererea.';
     var box = document.getElementById('bk-error');
     if (err) { box.textContent = err; box.hidden = false; return; }
 
+    var availability = AVAIL.filter(function (o) { return b.avail.indexOf(o.id) >= 0; })
+      .map(function (o) { return o.label; }).concat(b.availText.trim() ? [b.availText.trim()] : []).join('; ');
     var btn = form.querySelector('button[type=submit]');
     b.sending = true;
     btn.disabled = true;
     btn.textContent = 'Se trimite…';
-    MC.store.add({ serviceId: b.serviceId, date: b.date, hour: b.hour, name: b.name, phone: b.phone, note: b.note, source: 'online' })
-      .then(function (done) {
-        b.sending = false;
-        b.done = done;
-        MC.render();
-        window.scrollTo(0, 0);
-      }, function (e) {
-        b.sending = false;
-        // ora s-a ocupat între timp: reîncărcăm locurile și ne întoarcem la alegerea orei
-        if (/complet|trecut|lucrează|programului/.test(e.message)) {
-          MC.toast('Între timp ora aleasă s-a ocupat. Alege altă oră.', 'bad');
-          b.hour = null; b.step = 2;
-          MC.store.refresh().then(MC.render, MC.render);
-          return;
-        }
-        btn.disabled = false;
-        btn.textContent = 'Confirmă programarea';
-        box.textContent = e.message;
-        box.hidden = false;
-      });
+    MC.store.add({
+      serviceId: b.serviceId, date: b.date, hour: b.hour, name: b.name, phone: b.phone, note: b.note, source: 'online',
+      childName: b.forChild ? b.childName : '', childAge: b.forChild ? b.childAge : null,
+      availability: availability.slice(0, 300), evalDeclared: b.evalAnswer === 'yes'
+    }).then(function (done) {
+      b.sending = false;
+      b.done = done;
+      MC.render();
+      window.scrollTo(0, 0);
+    }, function (e) {
+      b.sending = false;
+      // ora s-a ocupat între timp: reîncărcăm locurile și ne întoarcem la alegerea orei
+      if (/ocupat|trecut|lucrează|programului/.test(e.message)) {
+        MC.toast('Între timp ora aleasă s-a ocupat. Alege altă oră.', 'bad');
+        b.hour = null; b.step = 2;
+        MC.store.refresh().then(MC.render, MC.render);
+        return;
+      }
+      btn.disabled = false;
+      btn.textContent = 'Trimite cererea';
+      box.textContent = e.message;
+      box.hidden = false;
+    });
   }
 
-  function resetBooking() {
-    MC.bk = { step: 1, cat: 'kineto', serviceId: null, date: null, hour: null, month: null, name: '', phone: '', note: '', gdpr: false, done: null, sending: false };
+  function resetBooking() { MC.bk = freshBooking(); }
+
+  /* ---------- Starea cererii (link primit de pacient) ---------- */
+
+  var STATUS_TEXT = {
+    pending: ['În așteptare', 'Clinica verifică cererea și te contactează pentru confirmare.'],
+    confirmed: ['Confirmată', 'Te așteptăm la clinică.'],
+    rejected: ['Neconfirmată', 'Ora cerută nu a putut fi confirmată. Sună-ne pentru altă oră.'],
+    cancelled: ['Anulată', 'Programarea a fost anulată.']
+  };
+
+  function statusPage() {
+    var token = new URLSearchParams(location.search).get('cerere') || MC.ui.statusToken || '';
+    var tokens = (token ? [token] : []).concat(MC.store.mine().filter(function (t) { return t !== token; }));
+    setTimeout(function () { loadStatuses(tokens); }, 0);
+    return pageHero('Programare online', 'Starea cererilor tale', 'Aici vezi dacă programarea a fost confirmată sau mutată.') +
+      '<section class="wrap page"><div id="status-list" class="status-list">' +
+        (tokens.length ? '<div class="loading small"><span></span>Se încarcă…</div>'
+          : '<div class="card"><p>Nu am găsit nicio cerere pe acest dispozitiv. Deschide linkul primit după programare sau sună-ne la ' +
+            '<a href="' + C.phoneHref + '">' + C.phone + '</a>.</p></div>') +
+      '</div><a class="btn primary" href="#programare">Fă o cerere nouă</a></section>';
+  }
+
+  function loadStatuses(tokens) {
+    if (!tokens.length) return;
+    Promise.all(tokens.map(function (t) { return MC.store.getStatus(t).catch(function () { return null; }); })).then(function (list) {
+      var box = document.getElementById('status-list');
+      if (!box) return;
+      var html = list.map(function (r) {
+        if (!r) return '';
+        var svc = MC.serviceById(r.serviceId);
+        var t = STATUS_TEXT[r.status] || STATUS_TEXT.pending;
+        return '<div class="card status-card st-' + r.status + '">' +
+          '<span class="st-badge">' + t[0] + '</span>' +
+          '<h2 class="card-title">' + MC.esc(svc ? svc.name : 'Programare') + (r.childName ? ' · ' + MC.esc(r.childName) : '') + '</h2>' +
+          '<div class="sum-row"><span>Data</span><b>' + MC.cap(MC.fmtDate(r.date, true)) + '</b></div>' +
+          '<div class="sum-row"><span>Ora</span><b>' + MC.hourLabel(r.hour) + '</b></div>' +
+          '<p>' + t[1] + '</p>' +
+          (r.staffNote ? '<p class="note-box"><b>Mesaj de la clinică:</b> ' + MC.esc(r.staffNote) + '</p>' : '') +
+          '</div>';
+      }).join('');
+      box.innerHTML = html || '<div class="card"><p>Cererea nu a fost găsită. Verifică linkul sau sună-ne la <a href="' + C.phoneHref + '">' + C.phone + '</a>.</p></div>';
+    });
   }
 
   /* ---------- evenimente ---------- */
@@ -398,7 +516,7 @@ window.MC = window.MC || {};
       resetBooking();
       var svc = MC.serviceById(el.dataset.svc);
       var d = MC.parseYmd(el.dataset.date);
-      Object.assign(MC.bk, { cat: svc.cat, serviceId: svc.id, date: el.dataset.date, hour: +el.dataset.hour, step: 2,
+      Object.assign(MC.bk, { cat: svc.cat, serviceId: svc.id, date: el.dataset.date, hour: +el.dataset.hour, step: needsEval(svc) ? 1 : 2,
         month: new Date(d.getFullYear(), d.getMonth(), 1) });
       MC.go('programare');
     },
@@ -407,19 +525,31 @@ window.MC = window.MC || {};
     'book-svc': function (el) {
       resetBooking();
       var svc = MC.serviceById(el.dataset.svc);
-      Object.assign(MC.bk, { cat: svc.cat, serviceId: svc.id, step: 2 });
+      Object.assign(MC.bk, { cat: svc.cat, serviceId: svc.id, step: needsEval(svc) ? 1 : 2 });
       MC.go('programare');
     },
     'bk-cat': function (el) { MC.bk.cat = el.dataset.cat; MC.render(); },
     'bk-svc': function (el) {
-      if (MC.bk.serviceId !== el.dataset.svc) { MC.bk.date = null; MC.bk.hour = null; }
+      if (MC.bk.serviceId !== el.dataset.svc) { MC.bk.date = null; MC.bk.hour = null; MC.bk.evalAnswer = null; }
       MC.bk.serviceId = el.dataset.svc; MC.render();
     },
-    'bk-next': function () {
-      if (MC.bk.step === 1 && !MC.bk.serviceId) return;
-      MC.bk.step++; MC.render(); window.scrollTo(0, 0);
+    'bk-eval': function () { MC.bk.evalAnswer = 'yes'; MC.render(); },
+    'bk-eval-book': function (el) {
+      var ev = MC.serviceById(el.dataset.svc);
+      Object.assign(MC.bk, { cat: ev.cat, serviceId: ev.id, evalAnswer: null, date: null, hour: null });
+      MC.toast('Am ales evaluarea. După ea poți programa terapia.', 'ok');
+      MC.render();
     },
-    'bk-step': function (el) { MC.bk.step = +el.dataset.step; MC.render(); },
+    'bk-next': function () {
+      var b = MC.bk;
+      var svc = b.serviceId && MC.serviceById(b.serviceId);
+      if (b.step === 1 && (!svc || (needsEval(svc) && b.evalAnswer !== 'yes'))) return;
+      b.step++; MC.render(); window.scrollTo(0, 0);
+    },
+    'bk-step': function (el) {
+      grab(document.getElementById('bk-form'));
+      MC.bk.step = +el.dataset.step; MC.render();
+    },
     'bk-month': function (el) {
       var m = MC.bk.month;
       MC.bk.month = new Date(m.getFullYear(), m.getMonth() + (+el.dataset.dir), 1);
@@ -427,11 +557,26 @@ window.MC = window.MC || {};
     },
     'bk-date': function (el) { MC.bk.date = el.dataset.date; MC.bk.hour = null; MC.render(); },
     'bk-hour': function (el) { MC.bk.hour = +el.dataset.hour; MC.render(); },
-    'bk-new': function () { resetBooking(); MC.render(); window.scrollTo(0, 0); }
+    'bk-new': function () { resetBooking(); MC.render(); window.scrollTo(0, 0); },
+    'copy-status': function () {
+      var inp = document.getElementById('status-url');
+      var done = function () { MC.toast('Linkul a fost copiat.', 'ok'); };
+      try {
+        navigator.clipboard.writeText(inp.value).then(done, function () { inp.select(); });
+      } catch (e) { inp.select(); }
+    }
   };
   MC.siteSubmit = function (form) {
     if (form.id === 'bk-form') { submitBooking(form); return true; }
     return false;
+  };
+  MC.siteChange = function (el) {
+    if (el.dataset.change !== 'bk-who') return false;
+    var child = el.value === 'child';
+    document.getElementById('bk-child-fields').hidden = !child;
+    document.getElementById('bk-name-label').textContent = child ? 'Numele părintelui' : 'Nume și prenume';
+    MC.bk.forChild = child;
+    return true;
   };
 
   /* ---------- Politica de confidențialitate ---------- */
@@ -441,9 +586,10 @@ window.MC = window.MC || {};
     return pageHero('GDPR', 'Politica de confidențialitate', 'Cum folosim datele pe care ni le lași când te programezi.') +
       '<section class="wrap page"><div class="card legal">' +
         '<h2>Cine suntem</h2><p>' + MC.esc(op) + ', ' + C.address + ', telefon ' + C.phone + '. Noi decidem cum sunt folosite datele din programări.</p>' +
-        '<h2>Ce date colectăm</h2><p>La programarea online: numele, numărul de telefon, serviciul, ziua și ora alese și, dacă le scrii, observațiile. ' +
+        '<h2>Ce date colectăm</h2><p>La cererea de programare: numele, numărul de telefon, serviciul, ziua și ora dorite, intervalele în care poți veni și, dacă le scrii, observațiile. ' +
+          'Pentru copii: numele și vârsta copilului, iar datele de contact sunt ale părintelui. ' +
           'Te rugăm să nu scrii detalii medicale în câmpul de observații; le discutăm la clinică.</p>' +
-        '<h2>De ce le folosim</h2><p>Doar ca să înregistrăm programarea și să te putem contacta dacă trebuie mutată sau anulată. ' +
+        '<h2>De ce le folosim</h2><p>Doar ca să înregistrăm și să confirmăm programarea și să te putem contacta, telefonic sau pe WhatsApp, dacă trebuie mutată sau anulată. ' +
           'Temeiul este acordul tău (bifat în formular) și pașii necesari înaintea unei prestări de servicii (art. 6 alin. (1) lit. a) și b) din GDPR).</p>' +
         '<h2>Cine are acces</h2><p>Doar personalul clinicii, din agenda protejată prin parolă. Datele sunt găzduite de furnizorul bazei de date (Supabase), pe servere din Uniunea Europeană. ' +
           'Nu vindem și nu dăm datele mai departe în scop de marketing.</p>' +
@@ -453,5 +599,5 @@ window.MC = window.MC || {};
       '</div></section>';
   }
 
-  MC.pages = { acasa: home, servicii: services, programare: booking, contact: contact, confidentialitate: privacy };
+  MC.pages = { acasa: home, servicii: services, programare: booking, contact: contact, confidentialitate: privacy, status: statusPage };
 })();

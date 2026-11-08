@@ -3,7 +3,7 @@ window.MC = window.MC || {};
 
 (function () {
   MC.ui = { servicesCat: 'toate' };
-  var ROUTES = ['acasa', 'servicii', 'programare', 'contact', 'confidentialitate', 'admin'];
+  var ROUTES = ['acasa', 'servicii', 'programare', 'contact', 'confidentialitate', 'status', 'admin'];
 
   function route() {
     var h = (location.hash || '').replace('#', '');
@@ -24,7 +24,7 @@ window.MC = window.MC || {};
     document.querySelectorAll('.nav a').forEach(function (a) {
       a.classList.toggle('on', a.getAttribute('href') === '#' + r);
     });
-    var titles = { acasa: 'Medicenter Clinic', servicii: 'Servicii și prețuri', programare: 'Programare online', contact: 'Contact', confidentialitate: 'Politica de confidențialitate', admin: 'Agenda clinicii' };
+    var titles = { acasa: 'Medicenter Clinic', servicii: 'Servicii și prețuri', programare: 'Programare online', contact: 'Contact', confidentialitate: 'Politica de confidențialitate', status: 'Starea cererii', admin: 'Agenda clinicii' };
     document.title = titles[r] + (r === 'acasa' ? ' · Suceava' : ' · Medicenter Clinic');
     document.getElementById('menu').classList.remove('open');
     reveal();
@@ -79,7 +79,7 @@ window.MC = window.MC || {};
       if (!MC.siteSubmit(e.target)) MC.adminSubmit(e.target);
     });
     app.addEventListener('change', function (e) {
-      if (e.target.dataset && e.target.dataset.change) MC.adminChange(e.target);
+      if (e.target.dataset && e.target.dataset.change && !MC.siteChange(e.target)) MC.adminChange(e.target);
     });
 
     MC.initAdminDnD(app);

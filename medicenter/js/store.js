@@ -6,24 +6,30 @@
  *  - live: baza de date Supabase (js/config.js completat), cu regulile din supabase/schema.sql.
  *
  * Citirile (settings, bookings, check…) sunt imediate, din memoria locală.
- * Modificările (add, move, remove, saveSettings…) întorc un Promise și actualizează memoria la final.
+ * Modificările (add, move, setStatus, saveSettings…) întorc un Promise și actualizează memoria la final.
+ *
+ * O programare are o stare: pending (cerere în așteptare), confirmed, rejected sau cancelled.
+ * Cererile în așteptare și programările confirmate ocupă locuri; cele refuzate sau anulate nu.
  */
 window.MC = window.MC || {};
 
 (function () {
   var cfg = MC.CONFIG || {};
   var LIVE = !!(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase);
-  var KEY = 'medicenter-demo-v1';
+  var KEY = 'medicenter-demo-v2';
+  var MINE_KEY = 'medicenter-cererile-mele';
 
   var DEFAULT_SETTINGS = {
     open: 9, close: 20, days: [1, 2, 3, 4, 5], maxDaysAhead: 60,
-    capacity: { kineto: 4, masaj: 2, fizio: 4, neuro: 1 }
+    capacity: { kineto: 4, masaj: 2, fizio: 4, neuro: 1 },
+    serviceCapacity: MC.DEFAULT_SERVICE_CAP,
+    evalRequired: MC.DEFAULT_EVAL
   };
   var DEMO_PASSWORD = 'medicenter';
 
   /* Mesaje pentru erorile întoarse de baza de date. */
   var ERRORS = {
-    FULL: 'Ora aleasă este completă pentru această secție.',
+    FULL: 'Ora aleasă este ocupată pentru această terapie.',
     CLOSED_DAY: 'Clinica nu lucrează în această zi.',
     OUT_OF_HOURS: 'Ora este în afara programului.',
     PAST: 'Ora aleasă a trecut deja.',
@@ -32,7 +38,8 @@ window.MC = window.MC || {};
     BUSY: 'Sunt multe programări în acest moment. Încearcă din nou peste câteva minute sau sună-ne.',
     BAD_PHONE: 'Numărul de telefon nu pare corect. Folosește formatul 07xx xxx xxx.',
     BAD_SERVICE: 'Serviciul ales nu este valid. Reîncarcă pagina și încearcă din nou.',
-    BAD_INPUT: 'Verifică numele și observațiile (maximum 500 de caractere).',
+    BAD_INPUT: 'Verifică datele completate (nume, vârsta copilului, observații de maximum 500 de caractere).',
+    EVAL_REQUIRED: 'Această terapie necesită întâi evaluarea la clinică.',
     NOT_STAFF: 'Contul nu are acces la agendă.',
     NOT_FOUND: 'Programarea nu mai există.'
   };
@@ -50,7 +57,7 @@ window.MC = window.MC || {};
   function fail(err) { return Promise.reject(new Error(friendly(err))); }
 
   var state = {
-    settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
+    settings: withDefaults({}),
     bookings: [],
     loaded: null,     // { from, to } interval încărcat
     role: null,       // 'admin' | 'staff' | null
@@ -58,24 +65,60 @@ window.MC = window.MC || {};
     recovery: /type=recovery/.test(location.hash) // a venit din emailul „resetează parola”
   };
 
+  /* Completează setările salvate cu valorile implicite care lipsesc (ex. terapii noi). */
+  function withDefaults(s) {
+    var out = Object.assign({}, DEFAULT_SETTINGS, s || {});
+    out.capacity = Object.assign({}, DEFAULT_SETTINGS.capacity, (s && s.capacity) || {});
+    out.serviceCapacity = Object.assign({}, DEFAULT_SETTINGS.serviceCapacity, (s && s.serviceCapacity) || {});
+    out.evalRequired = Object.assign({}, (s && s.evalRequired) || DEFAULT_SETTINGS.evalRequired);
+    return out;
+  }
+
   /* ---------- reguli comune (folosite de ambele moduri) ---------- */
 
-  function countAt(cat, date, hour, excludeId) {
+  function active(b) { return !b.status || b.status === 'pending' || b.status === 'confirmed'; }
+
+  function capOf(serviceId) {
+    var s = state.settings;
+    var svc = MC.serviceById(serviceId);
+    var v = s.serviceCapacity[serviceId];
+    if (v == null && svc) v = s.capacity[svc.cat];
+    return v || 1;
+  }
+
+  /* Câte programări active are terapia `serviceId` în ora `hour` din ziua `date`. */
+  function countAt(serviceId, date, hour, excludeId) {
     return state.bookings.filter(function (b) {
-      return b.cat === cat && b.date === date && b.id !== excludeId && hour >= b.hour && hour < b.hour + b.hours;
+      return active(b) && b.serviceId === serviceId && b.date === date && b.id !== excludeId &&
+        hour >= b.hour && hour < b.hour + b.hours;
     }).length;
   }
 
-  function check(cat, date, hour, hours, excludeId) {
+  /* Poate începe terapia la ora `hour`? Întoarce { ok, free, reason }. */
+  function check(serviceId, date, hour, hours, excludeId) {
     var s = state.settings;
     var d = MC.parseYmd(date);
     if (s.days.indexOf(d.getDay()) < 0) return { ok: false, free: 0, reason: ERRORS.CLOSED_DAY };
     if (hour < s.open || hour + hours > s.close) return { ok: false, free: 0, reason: ERRORS.OUT_OF_HOURS };
-    var cap = s.capacity[cat] || 1;
+    var cap = capOf(serviceId);
     var free = cap;
-    for (var k = 0; k < hours; k++) free = Math.min(free, cap - countAt(cat, date, hour + k, excludeId));
-    if (free <= 0) return { ok: false, free: 0, reason: 'Ora ' + MC.hourLabel(hour) + ' este completă pentru această secție.' };
+    for (var k = 0; k < hours; k++) free = Math.min(free, cap - countAt(serviceId, date, hour + k, excludeId));
+    if (free <= 0) return { ok: false, free: 0, reason: 'Ora ' + MC.hourLabel(hour) + ' este ocupată pentru această terapie.' };
     return { ok: true, free: free };
+  }
+
+  function evalFor(serviceId) { return state.settings.evalRequired[serviceId] || null; }
+
+  /* Cererile trimise de pe acest dispozitiv (doar token-uri), ca pacientul să le regăsească. */
+  function mine() {
+    try { return JSON.parse(localStorage.getItem(MINE_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function rememberMine(token) {
+    try {
+      var list = mine().filter(function (t) { return t !== token; });
+      list.unshift(token);
+      localStorage.setItem(MINE_KEY, JSON.stringify(list.slice(0, 10)));
+    } catch (e) { /* doar în memorie */ }
   }
 
   /* ---------- modul demo (browser) ---------- */
@@ -92,42 +135,46 @@ window.MC = window.MC || {};
         'Maria Ionescu', 'Gheorghe Tudor', 'Cristina Lungu', 'Laura Neagu', 'Mihai Barbu', 'Florin Avram',
         'Diana Cristea', 'Paul Ilie', 'Sorina Vlad', 'Mircea Oprea', 'Victor Roman', 'Andrei Coman',
         'Irina Moldovan', 'George Sima', 'Bianca Rusu', 'Alex Toma', 'Carmen Pavel', 'Dan Preda'];
-      var byCat = {};
-      MC.SERVICES.forEach(function (s) { if (MC.slotHours(s) === 1) (byCat[s.cat] = byCat[s.cat] || []).push(s); });
+      var kids = ['Matei', 'Sofia', 'David', 'Ilinca', 'Luca', 'Ana'];
+      var pool = MC.SERVICES.filter(function (s) { return MC.slotHours(s) === 1; });
       var r = 7;
       function rnd(n) { r = (r * 9301 + 49297) % 233280; return Math.floor(r / 233280 * n); }
-      var out = [];
-      var settings = DEFAULT_SETTINGS;
       var start = MC.weekStart(MC.today());
+      var todayYmd = MC.ymd(MC.today());
       for (var i = 0; i < 14; i++) {
         var d = MC.addDays(start, i);
-        if (settings.days.indexOf(d.getDay()) < 0) continue;
-        for (var h = settings.open; h < settings.close; h++) {
-          MC.CATS.forEach(function (c) {
-            var cap = settings.capacity[c.id];
-            var n = Math.max(0, Math.min(cap, rnd(cap + 2) - 1));
-            for (var k = 0; k < n; k++) {
-              var list = byCat[c.id];
-              var s = list[rnd(list.length)];
-              out.push({ id: MC.uid() + out.length, serviceId: s.id, cat: s.cat, date: MC.ymd(d), hour: h, hours: 1,
-                name: names[rnd(names.length)], phone: '07xx xxx xxx', note: '', source: 'test', demo: true });
-            }
-          });
+        if (state.settings.days.indexOf(d.getDay()) < 0) continue;
+        var ymd = MC.ymd(d);
+        for (var h = state.settings.open; h < state.settings.close; h++) {
+          var n = rnd(5);
+          for (var k = 0; k < n; k++) {
+            var svc = pool[rnd(pool.length)];
+            if (!check(svc.id, ymd, h, 1).ok) continue;
+            var child = rnd(4) === 0;
+            state.bookings.push({
+              id: MC.uid() + state.bookings.length, token: MC.uid(), serviceId: svc.id, cat: svc.cat, date: ymd, hour: h, hours: 1,
+              name: names[rnd(names.length)], phone: '07xx xxx xxx', note: '', source: 'test', demo: true,
+              status: ymd > todayYmd && rnd(5) === 0 ? 'pending' : 'confirmed',
+              childName: child ? kids[rnd(kids.length)] : '', childAge: child ? 4 + rnd(10) : null,
+              availability: child ? 'după 16:00' : '', evalDeclared: !!evalFor(svc.id), staffNote: ''
+            });
+          }
         }
       }
-      return out;
     }
+    function find(id) { return state.bookings.find(function (b) { return b.id === id; }); }
 
     return {
       init: function () {
         var data = null;
         try { data = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { /* stocare indisponibilă */ }
         if (data && data.settings) {
-          delete data.settings.adminPassword;
-          state.settings = data.settings;
+          state.settings = withDefaults(data.settings);
           state.bookings = data.bookings || [];
         } else {
-          state.bookings = seed();
+          state.settings = withDefaults({});
+          state.bookings = [];
+          seed();
           save();
         }
         state.role = authed ? 'admin' : null;
@@ -137,30 +184,54 @@ window.MC = window.MC || {};
       loadRange: function () { return Promise.resolve(); },
       add: function (data) {
         var svc = MC.serviceById(data.serviceId);
-        var c = check(svc.cat, data.date, data.hour, MC.slotHours(svc));
+        var staff = data.source === 'clinica';
+        if (!staff && evalFor(svc.id) && !data.evalDeclared) return fail('EVAL_REQUIRED');
+        var c = check(svc.id, data.date, data.hour, MC.slotHours(svc));
         if (!c.ok) return fail(c.reason);
-        var b = { id: MC.uid(), serviceId: svc.id, cat: svc.cat, date: data.date, hour: data.hour, hours: MC.slotHours(svc),
-          name: data.name.trim(), phone: data.phone.trim(), note: (data.note || '').trim(), source: data.source || 'online',
+        var b = { id: MC.uid(), token: MC.uid() + MC.uid(), serviceId: svc.id, cat: svc.cat, date: data.date, hour: data.hour,
+          hours: MC.slotHours(svc), name: data.name.trim(), phone: data.phone.trim(), note: (data.note || '').trim(),
+          source: staff ? 'clinica' : 'online', status: staff ? 'confirmed' : 'pending',
+          childName: (data.childName || '').trim(), childAge: data.childAge == null || data.childAge === '' ? null : +data.childAge,
+          availability: (data.availability || '').trim(), evalDeclared: !!data.evalDeclared, staffNote: '',
           createdAt: new Date().toISOString() };
         state.bookings.push(b);
+        if (!staff) rememberMine(b.token);
         save();
         return Promise.resolve(b);
       },
-      move: function (id, date, hour) {
-        var b = MC.store.get(id);
+      move: function (id, date, hour, confirm) {
+        var b = find(id);
         if (!b) return fail('NOT_FOUND');
-        var c = check(b.cat, date, hour, b.hours, id);
+        var c = check(b.serviceId, date, hour, b.hours, id);
         if (!c.ok) return fail(c.reason);
         b.date = date; b.hour = hour;
+        if (confirm || !active(b)) b.status = 'confirmed';
         save();
         return Promise.resolve(b);
       },
-      remove: function (id) {
-        state.bookings = state.bookings.filter(function (b) { return b.id !== id; });
+      setStatus: function (id, status, note) {
+        var b = find(id);
+        if (!b) return fail('NOT_FOUND');
+        if (status === 'confirmed' && !active(b)) {
+          var c = check(b.serviceId, b.date, b.hour, b.hours, id);
+          if (!c.ok) return fail(c.reason);
+        }
+        b.status = status; b.staffNote = (note || '').trim();
         save();
-        return Promise.resolve();
+        return Promise.resolve(b);
       },
-      saveSettings: function (s) { state.settings = s; save(); return Promise.resolve(); },
+      getStatus: function (token) {
+        var b = state.bookings.find(function (x) { return x.token === token; });
+        return Promise.resolve(b ? { serviceId: b.serviceId, date: b.date, hour: b.hour, hours: b.hours,
+          status: b.status || 'confirmed', staffNote: b.staffNote || '', childName: b.childName || '' } : null);
+      },
+      history: function (phone) {
+        var key = String(phone).replace(/\D/g, '');
+        return Promise.resolve(state.bookings.filter(function (b) {
+          return key.length >= 9 && String(b.phone).replace(/\D/g, '') === key;
+        }));
+      },
+      saveSettings: function (s) { state.settings = withDefaults(s); save(); return Promise.resolve(); },
       clearDemo: function () {
         state.bookings = state.bookings.filter(function (b) { return !b.demo; });
         save();
@@ -194,9 +265,12 @@ window.MC = window.MC || {};
 
     function fromRow(r) {
       return {
-        id: r.id || (r.cat + r.date + r.hour + Math.random()), serviceId: r.service_id || null, cat: r.cat, date: r.date,
-        hour: r.hour, hours: r.hours, name: r.name || '', phone: r.phone || '', note: r.note || '',
-        source: r.source || 'online', createdAt: r.created_at
+        id: r.id || (r.service_id + r.date + r.hour + Math.random()), token: r.token || null,
+        serviceId: r.service_id, cat: r.cat, date: r.date, hour: r.hour, hours: r.hours,
+        name: r.name || '', phone: r.phone || '', note: r.note || '', source: r.source || 'online',
+        status: r.status || 'confirmed', childName: r.child_name || '', childAge: r.child_age == null ? null : r.child_age,
+        availability: r.availability || '', evalDeclared: !!r.eval_declared, staffNote: r.staff_note || '',
+        createdAt: r.created_at
       };
     }
     function defaultRange() {
@@ -208,7 +282,7 @@ window.MC = window.MC || {};
     function loadSettings() {
       return sb.from('settings').select('data').eq('id', 1).single().then(function (res) {
         if (res.error) throw res.error;
-        state.settings = Object.assign({}, DEFAULT_SETTINGS, res.data.data);
+        state.settings = withDefaults(res.data.data);
       });
     }
     function loadRole() {
@@ -233,6 +307,7 @@ window.MC = window.MC || {};
       return loadSettings().then(loadRole).then(function () { return loadBookings(defaultRange()); })
         .catch(function (e) { return fail(e); });
     }
+    function local(id) { return state.bookings.find(function (b) { return b.id === id; }); }
 
     return {
       client: sb,
@@ -247,36 +322,62 @@ window.MC = window.MC || {};
       },
       add: function (data) {
         var svc = MC.serviceById(data.serviceId);
+        var staff = data.source === 'clinica';
         return sb.rpc('book', {
           p_service_id: svc.id, p_cat: svc.cat, p_date: data.date, p_hour: data.hour, p_hours: MC.slotHours(svc),
-          p_name: data.name, p_phone: data.phone, p_note: data.note || '', p_source: data.source === 'clinica' ? 'clinica' : 'online'
+          p_name: data.name, p_phone: data.phone, p_note: data.note || '', p_source: staff ? 'clinica' : 'online',
+          p_child_name: data.childName || '', p_child_age: data.childAge === '' || data.childAge == null ? null : +data.childAge,
+          p_availability: data.availability || '', p_eval_declared: !!data.evalDeclared
         }).then(function (res) {
           if (res.error) return fail(res.error);
-          var b = { id: res.data, serviceId: svc.id, cat: svc.cat, date: data.date, hour: data.hour, hours: MC.slotHours(svc),
-            name: data.name.trim(), phone: data.phone.trim(), note: (data.note || '').trim(), source: data.source || 'online' };
+          var b = { id: res.data.id, token: res.data.token, serviceId: svc.id, cat: svc.cat, date: data.date, hour: data.hour,
+            hours: MC.slotHours(svc), name: data.name.trim(), phone: data.phone.trim(), note: (data.note || '').trim(),
+            source: staff ? 'clinica' : 'online', status: res.data.status,
+            childName: (data.childName || '').trim(), childAge: data.childAge === '' || data.childAge == null ? null : +data.childAge,
+            availability: (data.availability || '').trim(), evalDeclared: !!data.evalDeclared, staffNote: '' };
           state.bookings.push(b);
+          if (!staff) rememberMine(b.token);
           return b;
         });
       },
-      move: function (id, date, hour) {
-        return sb.rpc('move_booking', { p_id: id, p_date: date, p_hour: hour }).then(function (res) {
+      move: function (id, date, hour, confirm) {
+        return sb.rpc('move_booking', { p_id: id, p_date: date, p_hour: hour, p_confirm: !!confirm }).then(function (res) {
           if (res.error) return fail(res.error);
-          var b = MC.store.get(id);
-          if (b) { b.date = date; b.hour = hour; }
+          var b = local(id);
+          if (b) { b.date = date; b.hour = hour; if (confirm || !active(b)) b.status = 'confirmed'; }
           return b;
         });
       },
-      remove: function (id) {
-        return sb.from('bookings').delete().eq('id', id).then(function (res) {
+      setStatus: function (id, status, note) {
+        return sb.rpc('set_booking_status', { p_id: id, p_status: status, p_note: note || '' }).then(function (res) {
           if (res.error) return fail(res.error);
-          state.bookings = state.bookings.filter(function (b) { return b.id !== id; });
+          var b = local(id);
+          if (b) { b.status = status; b.staffNote = (note || '').trim(); }
+          return b;
+        });
+      },
+      getStatus: function (token) {
+        if (!/^[0-9a-f-]{36}$/i.test(token)) return Promise.resolve(null);
+        return sb.rpc('get_booking_status', { p_token: token }).then(function (res) {
+          if (res.error) return fail(res.error);
+          var r = res.data && res.data[0];
+          return r ? { serviceId: r.service_id, date: r.date, hour: r.hour, hours: r.hours, status: r.status,
+            staffNote: r.staff_note || '', childName: r.child_name || '' } : null;
+        });
+      },
+      history: function (phone) {
+        var p = String(phone).trim();
+        if (p.replace(/\D/g, '').length < 9) return Promise.resolve([]);
+        return sb.from('bookings').select('*').eq('phone', p).order('date', { ascending: false }).limit(30).then(function (res) {
+          if (res.error) return fail(res.error);
+          return (res.data || []).map(fromRow);
         });
       },
       saveSettings: function (s) {
         return sb.from('settings').update({ data: s, updated_at: new Date().toISOString() }).eq('id', 1).select().then(function (res) {
           if (res.error) return fail(res.error);
           if (!res.data || !res.data.length) return fail('Doar administratorii pot schimba setările.');
-          state.settings = s;
+          state.settings = withDefaults(s);
         });
       },
       clearDemo: function () { return Promise.resolve(); },
@@ -342,14 +443,25 @@ window.MC = window.MC || {};
 
     settings: function () { return state.settings; },
     bookings: function () { return state.bookings; },
-    bookingsOn: function (date) { return state.bookings.filter(function (b) { return b.date === date; }); },
+    /* Programările active (în așteptare sau confirmate) dintr-o zi. */
+    bookingsOn: function (date) { return state.bookings.filter(function (b) { return b.date === date && active(b); }); },
+    pending: function () {
+      return state.bookings.filter(function (b) { return b.status === 'pending'; })
+        .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.hour - b.hour; });
+    },
     get: function (id) { return state.bookings.find(function (b) { return b.id === id; }); },
+    active: active,
+    capOf: capOf,
     countAt: countAt,
     check: check,
+    evalFor: evalFor,
+    mine: mine,
 
     add: impl.add,
     move: impl.move,
-    remove: impl.remove,
+    setStatus: impl.setStatus,
+    getStatus: impl.getStatus,
+    history: impl.history,
     saveSettings: impl.saveSettings,
     clearDemo: impl.clearDemo,
 

@@ -594,3 +594,93 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .legal h2 { font-size: 1.4rem; margin-top: 10px; }
 .legal p { color: var(--ink); }
 .copy a { color: #c3cfda; text-decoration: underline; }
+
+/* ---------- cereri, evaluare obligatorie, copii ---------- */
+.eval-tag { color: var(--warn) !important; font-weight: 700; }
+.eval-card { border-color: #ecd3a6; background: var(--sand-soft); display: grid; gap: 10px; }
+.eval-card h3 { font: 700 1.3rem/1.2 var(--f-display); }
+.eval-choices { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.choice {
+  display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 14px; border-radius: 14px; cursor: pointer;
+  border: 1.5px solid var(--line); background: var(--surface); transition: border-color .2s, background .2s;
+}
+.choice svg { width: 22px; flex: none; color: var(--slate); margin-top: 2px; }
+.choice small { display: block; color: var(--muted); font-size: 0.85rem; }
+.choice:hover { border-color: var(--slate); }
+.choice.on { border-color: var(--ok); background: var(--ok-soft); }
+.choice.on svg { color: var(--ok); }
+.info-box { background: var(--slate-soft); color: var(--slate-deep); padding: 10px 14px; border-radius: 12px; font-size: 0.92rem; margin-bottom: 6px; }
+.info-box.ok { background: var(--ok-soft); color: var(--ok); }
+.form fieldset { border: 0; padding: 0; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.form legend { font-size: 0.875rem; color: var(--muted); font-weight: 600; margin-bottom: 6px; padding: 0; }
+.pill { position: relative; margin: 0 !important; }
+.pill input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.pill span { display: inline-block; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 0.92rem; }
+.pill input:checked + span { background: var(--slate); border-color: var(--slate); color: #fff; }
+.pill input:focus-visible + span { outline: 2px solid var(--sand-deep); outline-offset: 2px; }
+.avail input[type=text], .avail #bk-avail { flex-basis: 100%; }
+.sum-note { margin: 10px 22px 0; font-size: 0.85rem; font-weight: 700; color: var(--warn); }
+.slot-note { margin-top: 12px; }
+.done-check.wait { background: var(--sand); color: var(--navy); }
+.status-link { display: grid; gap: 8px; margin-top: 14px; padding: 14px; border-radius: 14px; background: var(--slate-soft); }
+.status-link input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 0.85rem; }
+.status-list { display: grid; gap: 14px; max-width: 640px; }
+.status-card { display: grid; gap: 6px; border-left: 5px solid var(--warn); }
+.status-card.st-confirmed { border-left-color: var(--ok); }
+.status-card.st-rejected, .status-card.st-cancelled { border-left-color: var(--bad); }
+.st-badge { justify-self: start; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 4px 12px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+.st-confirmed .st-badge { background: var(--ok-soft); color: var(--ok); }
+.st-rejected .st-badge, .st-cancelled .st-badge { background: var(--bad-soft); color: var(--bad); }
+.loading.small { min-height: 0; padding: 30px 0; }
+
+/* agenda: cereri în așteptare */
+.pending-btn { border-color: var(--line); }
+.pending-btn b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--line); font-size: 0.8rem; }
+.pending-btn.has { border-color: var(--warn); color: var(--warn); }
+.pending-btn.has b { background: var(--warn); color: #fff; }
+.cnt.pend { background: var(--warn); color: #fff; margin-right: 4px; }
+.bchip.pending { background: repeating-linear-gradient(-45deg, var(--warn-soft) 0 6px, #fff 6px 12px); outline: 1.5px dashed var(--warn); outline-offset: -1.5px; }
+.lg-pending { padding: 2px 10px; border-radius: 6px; outline: 1.5px dashed var(--warn); background: var(--warn-soft); color: var(--warn); font-weight: 700; }
+.pending-card { display: grid; grid-template-columns: 1fr auto; align-items: center; text-align: left; cursor: pointer; background: var(--warn-soft); border-color: #ecd3a6; color: var(--ink); }
+.pending-card b { font-size: 1.1rem; color: var(--warn); }
+.pending-card span { grid-column: 1; color: var(--muted); font-size: 0.9rem; }
+.pending-card svg { grid-column: 2; grid-row: 1 / span 2; width: 20px; color: var(--warn); }
+.req-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.req { width: 100%; display: grid; gap: 1px; text-align: left; padding: 10px 12px; border-radius: 12px; cursor: pointer; border: 1.5px dashed var(--warn); border-left: 5px solid var(--cat); background: var(--surface); }
+.req span { font-size: 0.88rem; }
+.req small { color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.tag.st-pending { background: var(--warn-soft); color: var(--warn); }
+.tag.st-confirmed { background: var(--ok-soft); color: var(--ok); }
+.tag.st-rejected, .tag.st-cancelled { background: var(--bad-soft); color: var(--bad); }
+.eval-box { margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: var(--slate-soft); font-size: 0.9rem; }
+.eval-box.warn { background: var(--warn-soft); }
+.ok-line, .warn-line { margin-top: 6px; font-weight: 700; display: flex; gap: 6px; align-items: center; }
+.ok-line { color: var(--ok); } .ok-line svg { width: 16px; }
+.warn-line { color: var(--warn); }
+.history h3 { margin: 10px 0 4px; font-size: 0.95rem; }
+.history ul { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
+.history li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+.history b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history em { font-style: normal; color: var(--muted); }
+.btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.btn.wa { background: #1f9d55; border-color: #1f9d55; color: #fff; margin-top: 10px; text-align: center; }
+.btn.wa:hover { background: #17824a; }
+
+/* setări pe terapii */
+.svc-set { border: 1px solid var(--line); border-left: 4px solid var(--cat); border-radius: 12px; margin-top: 8px; background: var(--surface); }
+.svc-set summary { cursor: pointer; padding: 12px 14px; font-weight: 700; }
+.svc-rows { display: grid; padding: 0 14px 10px; }
+.svc-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 220px); gap: 10px; align-items: center; padding: 8px 0; border-top: 1px dashed var(--line); font-size: 0.9rem; }
+.svc-row label { margin: 0 !important; color: var(--ink) !important; font-weight: 500 !important; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.svc-row .cap-in input { width: 70px !important; padding: 6px 8px !important; }
+.svc-row select { padding: 6px 8px !important; font-size: 0.85rem; }
+.svc-row .ev-in input { accent-color: var(--slate); width: 17px; height: 17px; }
+@media (max-width: 760px) {
+  .eval-choices { grid-template-columns: minmax(0, 1fr); }
+  .svc-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .svc-row-name { grid-column: 1 / -1; font-weight: 600; }
+  .svc-row select { grid-column: 1 / -1; }
+}
+.svc-pick { grid-template-columns: minmax(0, 1fr); }
+.svc-price { white-space: normal; text-align: right; max-width: 45%; }
