@@ -684,3 +684,13 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 }
 .svc-pick { grid-template-columns: minmax(0, 1fr); }
 .svc-price { white-space: normal; text-align: right; max-width: 45%; }
+
+/* pacient nou / fără trimitere */
+.new-patient { display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px; border-radius: 16px; cursor: pointer;
+  border: 1.5px solid var(--line); background: var(--surface); transition: border-color .2s, background .2s; }
+.new-patient input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--slate); flex: none; }
+.new-patient small { display: block; color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+.new-patient.on { border-color: var(--slate); background: var(--slate-soft); }
+.tag.new { background: #e9e4f5; color: #6a4b9a; }
+.svc-row { grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 200px); }
+@media (max-width: 760px) { .svc-row { grid-template-columns: minmax(0, 1fr) auto; } }

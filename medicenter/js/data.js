@@ -111,6 +111,8 @@ MC.DEFAULT_SERVICE_CAP = {
 };
 /* Terapii care cer o evaluare făcută înainte la clinică: terapie → serviciul de evaluare. */
 MC.DEFAULT_EVAL = { k05: 'k06', k10: 'k06' };
+/* Ce pot alege pacienții noi sau fără trimitere: doar evaluările și consultațiile de verificare. */
+MC.DEFAULT_NEW_PATIENT = ['k06', 'n01', 'n02', 'n03'];
 
 MC.serviceById = function (id) {
   return MC.SERVICES.find(function (s) { return s.id === id; });

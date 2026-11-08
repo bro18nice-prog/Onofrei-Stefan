@@ -220,7 +220,7 @@ window.MC = window.MC || {};
   ];
   function freshBooking() {
     return { step: 1, cat: 'kineto', serviceId: null, date: null, hour: null, month: null,
-      evalAnswer: null, forChild: false, childName: '', childAge: '', name: '', phone: '',
+      evalAnswer: null, newPatient: false, forChild: false, childName: '', childAge: '', name: '', phone: '',
       avail: [], availText: '', note: '', gdpr: false, done: null, sending: false };
   }
   MC.bk = freshBooking();
@@ -252,17 +252,25 @@ window.MC = window.MC || {};
 
   function stepService(svc) {
     var b = MC.bk;
-    var list = MC.SERVICES.filter(function (s) { return s.cat === b.cat; });
-    var ev = needsEval(svc);
-    return '<div class="card"><h2 class="card-title">Ce serviciu dorești?</h2>' +
-      '<div class="chips">' + MC.CATS.map(function (c) {
+    var cats = b.newPatient ? MC.CATS.filter(function (c) {
+      return MC.SERVICES.some(function (s) { return s.cat === c.id && MC.store.forNewPatients(s.id); });
+    }) : MC.CATS;
+    if (!cats.some(function (c) { return c.id === b.cat; }) && cats.length) b.cat = cats[0].id;
+    var list = MC.SERVICES.filter(function (s) { return s.cat === b.cat && (!b.newPatient || MC.store.forNewPatients(s.id)); });
+    var ev = b.newPatient ? null : needsEval(svc);
+    return '<label class="new-patient' + (b.newPatient ? ' on' : '') + '" for="bk-new">' +
+        '<input type="checkbox" id="bk-new" data-change="bk-new"' + (b.newPatient ? ' checked' : '') + '>' +
+        '<span><b>Sunt pacient nou / nu am trimitere</b><small>Bifează dacă vii prima dată la Medicenter. Prima programare este o evaluare sau o consultație cu medicul, care stabilește apoi terapia.</small></span>' +
+      '</label>' +
+      '<div class="card"><h2 class="card-title">' + (b.newPatient ? 'Alege evaluarea sau consultația' : 'Ce serviciu dorești?') + '</h2>' +
+      '<div class="chips">' + cats.map(function (c) {
         return '<button class="chip' + (c.id === b.cat ? ' on' : '') + '" style="--cat:' + c.color + '" data-action="bk-cat" data-cat="' + c.id + '">' +
           '<span class="chip-ico">' + MC.ICONS[c.icon] + '</span>' + c.short + '</button>';
       }).join('') + '</div>' +
       '<ul class="svc-pick">' + list.map(function (s) {
         return '<li><button class="svc' + (s.id === b.serviceId ? ' on' : '') + '" style="--cat:' + MC.catById(s.cat).color + '" data-action="bk-svc" data-svc="' + s.id + '">' +
           '<span class="svc-name">' + MC.esc(s.name) + (s.durLabel ? '<small>' + s.durLabel + '</small>' : '') +
-          (MC.store.evalFor(s.id) ? '<small class="eval-tag">necesită evaluare înainte</small>' : '') + '</span>' +
+          (!b.newPatient && MC.store.evalFor(s.id) ? '<small class="eval-tag">necesită evaluare înainte</small>' : '') + '</span>' +
           '<span class="svc-price">' + s.price + '</span></button></li>';
       }).join('') + '</ul></div>' +
       (ev ? '<div class="card eval-card">' +
@@ -352,7 +360,8 @@ window.MC = window.MC || {};
       '</fieldset>' +
       '<label for="bk-note">Observații <span class="muted">(opțional)</span></label>' +
       '<textarea id="bk-note" name="note" rows="3" maxlength="500" placeholder="Ex.: prima ședință. Te rugăm să nu scrii detalii medicale.">' + MC.esc(b.note) + '</textarea>' +
-      (needsEval(svc) ? '<p class="info-box ok">Ai declarat că ai făcut evaluarea la Medicenter. Medicul verifică la confirmare.</p>' : '') +
+      (b.newPatient ? '<p class="info-box">Pacient nou: după evaluare, medicul îți recomandă terapia și numărul de ședințe.</p>' : '') +
+      (!b.newPatient && needsEval(svc) ? '<p class="info-box ok">Ai declarat că ai făcut evaluarea la Medicenter. Medicul verifică la confirmare.</p>' : '') +
       '<label class="check" for="bk-gdpr"><input type="checkbox" id="bk-gdpr" name="gdpr"' + (b.gdpr ? ' checked' : '') + '>' +
       '<span>Sunt de acord ca Medicenter Clinic să folosească aceste date pentru gestionarea programării. <a href="#confidentialitate" target="_blank">Politica de confidențialitate</a></span></label>' +
       '<p class="form-error" id="bk-error" role="alert" hidden></p>' +
@@ -369,8 +378,8 @@ window.MC = window.MC || {};
       var mins = b.hour * 60 + (svc.dur || 60);
       end = MC.hourLabel(b.hour) + ' – ' + MC.pad(Math.floor(mins / 60)) + ':' + MC.pad(mins % 60);
     }
-    var ev = needsEval(svc);
-    var canGo = svc && (!ev || b.evalAnswer === 'yes');
+    var ev = b.newPatient ? null : needsEval(svc);
+    var canGo = svc && (!ev || b.evalAnswer === 'yes') && (!b.newPatient || MC.store.forNewPatients(svc.id));
     return '<aside class="card summary"><h2 class="card-title">Rezumat</h2>' +
       row('Serviciu', svc && MC.esc(svc.name)) +
       row('Preț', svc && svc.price) +
@@ -442,7 +451,7 @@ window.MC = window.MC || {};
     MC.store.add({
       serviceId: b.serviceId, date: b.date, hour: b.hour, name: b.name, phone: b.phone, note: b.note, source: 'online',
       childName: b.forChild ? b.childName : '', childAge: b.forChild ? b.childAge : null,
-      availability: availability.slice(0, 300), evalDeclared: b.evalAnswer === 'yes'
+      availability: availability.slice(0, 300), evalDeclared: !b.newPatient && b.evalAnswer === 'yes', newPatient: b.newPatient
     }).then(function (done) {
       b.sending = false;
       b.done = done;
@@ -543,7 +552,8 @@ window.MC = window.MC || {};
     'bk-next': function () {
       var b = MC.bk;
       var svc = b.serviceId && MC.serviceById(b.serviceId);
-      if (b.step === 1 && (!svc || (needsEval(svc) && b.evalAnswer !== 'yes'))) return;
+      if (b.step === 1 && (!svc || (!b.newPatient && needsEval(svc) && b.evalAnswer !== 'yes') ||
+        (b.newPatient && !MC.store.forNewPatients(svc.id)))) return;
       b.step++; MC.render(); window.scrollTo(0, 0);
     },
     'bk-step': function (el) {
@@ -571,6 +581,14 @@ window.MC = window.MC || {};
     return false;
   };
   MC.siteChange = function (el) {
+    if (el.dataset.change === 'bk-new') {
+      var b = MC.bk;
+      b.newPatient = el.checked;
+      b.evalAnswer = null;
+      if (b.newPatient && b.serviceId && !MC.store.forNewPatients(b.serviceId)) { b.serviceId = null; b.date = null; b.hour = null; }
+      MC.render();
+      return true;
+    }
     if (el.dataset.change !== 'bk-who') return false;
     var child = el.value === 'child';
     document.getElementById('bk-child-fields').hidden = !child;

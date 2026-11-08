@@ -258,7 +258,7 @@ window.MC = window.MC || {};
         var svc = MC.serviceById(b.serviceId);
         var c = MC.catById(b.cat);
         return '<li><button class="req" style="--cat:' + c.color + '" data-action="adm-open" data-id="' + b.id + '">' +
-          '<b>' + MC.esc(b.childName ? b.childName + ' (copil)' : b.name) + '</b>' +
+          '<b>' + MC.esc(b.childName ? b.childName + ' (copil)' : b.name) + (b.newPatient ? ' · pacient nou' : '') + '</b>' +
           '<span>' + MC.esc(svc ? svc.name : c.short) + '</span>' +
           '<small>' + MC.cap(MC.fmtDate(b.date)) + ', ' + MC.hourLabel(b.hour) + (b.evalDeclared ? ' · verifică evaluarea' : '') + '</small></button></li>';
       }).join('') + '</ul>' : '<p class="muted">Nu sunt cereri noi.</p>') +
@@ -298,7 +298,8 @@ window.MC = window.MC || {};
     var activeB = MC.store.active(b);
     var tag = b.demo ? '<span class="tag">test</span> ' : '';
     tag += '<span class="tag st-' + (b.status || 'confirmed') + '">' + STATUS_LABEL[b.status || 'confirmed'] + '</span> ' +
-      '<span class="tag ' + (b.source === 'online' ? 'online' : 'phone') + '">' + (b.source === 'online' ? 'cerere online' : 'adăugată de clinică') + '</span>';
+      '<span class="tag ' + (b.source === 'online' ? 'online' : 'phone') + '">' + (b.source === 'online' ? 'cerere online' : 'adăugată de clinică') + '</span>' +
+      (b.newPatient ? ' <span class="tag new">pacient nou</span>' : '');
     var ev = MC.store.evalFor(b.serviceId);
     var hasPhone = MC.validPhone(b.phone);
 
@@ -416,7 +417,8 @@ window.MC = window.MC || {};
         '<div class="inline"><input type="number" id="st-ahead" min="7" max="365" value="' + s.maxDaysAhead + '"> <span>zile înainte</span></div>' +
         '<h3>Terapii: locuri pe oră și evaluare obligatorie</h3>' +
         '<p class="muted small">„Locuri” = câți pacienți pot face aceeași terapie în aceeași oră (1 = individual). ' +
-          'Bifează „Evaluare înainte” la terapiile care cer o evaluare făcută la clinică, înainte de prima ședință.</p>' +
+          'Bifează „Evaluare înainte” la terapiile care cer o evaluare făcută la clinică, înainte de prima ședință, ' +
+          'și „Pacienți noi” la evaluările și consultațiile pe care le poate alege un pacient nou sau fără trimitere.</p>' +
         MC.CATS.map(function (c) {
           return '<details class="svc-set" style="--cat:' + c.color + '"><summary><i class="dot" style="background:' + c.color + '"></i>' + c.name + '</summary>' +
             '<div class="svc-rows">' + MC.SERVICES.filter(function (x) { return x.cat === c.id; }).map(function (x) {
@@ -424,6 +426,7 @@ window.MC = window.MC || {};
               return '<div class="svc-row"><span class="svc-row-name">' + MC.esc(x.name) + '</span>' +
                 '<label class="cap-in">Locuri <input type="number" min="1" max="30" id="cap-' + x.id + '" value="' + MC.store.capOf(x.id) + '"></label>' +
                 '<label class="ev-in"><input type="checkbox" id="ev-' + x.id + '"' + (ev ? ' checked' : '') + '> Evaluare înainte</label>' +
+                '<label class="ev-in"><input type="checkbox" id="np-' + x.id + '"' + (MC.store.forNewPatients(x.id) ? ' checked' : '') + '> Pacienți noi</label>' +
                 '<select id="evs-' + x.id + '" aria-label="Evaluarea cerută">' + evalChoices.map(function (e) {
                   return '<option value="' + e.id + '"' + ((ev || 'k06') === e.id ? ' selected' : '') + '>' + MC.esc(e.name) + '</option>';
                 }).join('') + '</select></div>';
@@ -646,9 +649,11 @@ window.MC = window.MC || {};
       var s = JSON.parse(JSON.stringify(MC.store.settings()));
       s.serviceCapacity = {};
       s.evalRequired = {};
+      s.newPatient = [];
       MC.SERVICES.forEach(function (x) {
         s.serviceCapacity[x.id] = Math.max(1, Math.min(30, parseInt(val('cap-' + x.id), 10) || 1));
         if (document.getElementById('ev-' + x.id).checked && val('evs-' + x.id) !== x.id) s.evalRequired[x.id] = val('evs-' + x.id);
+        if (document.getElementById('np-' + x.id).checked) s.newPatient.push(x.id);
       });
       s.open = +val('st-open');
       s.close = +val('st-close');
@@ -656,6 +661,7 @@ window.MC = window.MC || {};
       s.maxDaysAhead = Math.max(7, Math.min(365, parseInt(val('st-ahead'), 10) || 60));
       if (s.close - s.open < 1) { showErr('st-error', 'Ora de închidere trebuie să fie după prima programare.'); return true; }
       if (!s.days.length) { showErr('st-error', 'Bifează cel puțin o zi lucrătoare.'); return true; }
+      if (!s.newPatient.length) { showErr('st-error', 'Bifează „Pacienți noi” la cel puțin o evaluare sau consultație.'); return true; }
       run(MC.store.saveSettings(s), 'Setările au fost salvate.', 'st-error').then(MC.render, function () {});
       return true;
     }

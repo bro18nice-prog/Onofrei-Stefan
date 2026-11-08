@@ -23,7 +23,8 @@ window.MC = window.MC || {};
     open: 9, close: 20, days: [1, 2, 3, 4, 5], maxDaysAhead: 60,
     capacity: { kineto: 4, masaj: 2, fizio: 4, neuro: 1 },
     serviceCapacity: MC.DEFAULT_SERVICE_CAP,
-    evalRequired: MC.DEFAULT_EVAL
+    evalRequired: MC.DEFAULT_EVAL,
+    newPatient: MC.DEFAULT_NEW_PATIENT
   };
   var DEMO_PASSWORD = 'medicenter';
 
@@ -40,6 +41,7 @@ window.MC = window.MC || {};
     BAD_SERVICE: 'Serviciul ales nu este valid. Reîncarcă pagina și încearcă din nou.',
     BAD_INPUT: 'Verifică datele completate (nume, vârsta copilului, observații de maximum 500 de caractere).',
     EVAL_REQUIRED: 'Această terapie necesită întâi evaluarea la clinică.',
+    NEW_PATIENT_ONLY: 'Pacienții noi pot programa întâi doar o evaluare sau o consultație.',
     NOT_STAFF: 'Contul nu are acces la agendă.',
     NOT_FOUND: 'Programarea nu mai există.'
   };
@@ -71,6 +73,7 @@ window.MC = window.MC || {};
     out.capacity = Object.assign({}, DEFAULT_SETTINGS.capacity, (s && s.capacity) || {});
     out.serviceCapacity = Object.assign({}, DEFAULT_SETTINGS.serviceCapacity, (s && s.serviceCapacity) || {});
     out.evalRequired = Object.assign({}, (s && s.evalRequired) || DEFAULT_SETTINGS.evalRequired);
+    out.newPatient = ((s && s.newPatient) || DEFAULT_SETTINGS.newPatient).slice();
     return out;
   }
 
@@ -108,6 +111,7 @@ window.MC = window.MC || {};
   }
 
   function evalFor(serviceId) { return state.settings.evalRequired[serviceId] || null; }
+  function forNewPatients(serviceId) { return state.settings.newPatient.indexOf(serviceId) >= 0; }
 
   /* Cererile trimise de pe acest dispozitiv (doar token-uri), ca pacientul să le regăsească. */
   function mine() {
@@ -186,13 +190,14 @@ window.MC = window.MC || {};
         var svc = MC.serviceById(data.serviceId);
         var staff = data.source === 'clinica';
         if (!staff && evalFor(svc.id) && !data.evalDeclared) return fail('EVAL_REQUIRED');
+        if (!staff && data.newPatient && !forNewPatients(svc.id)) return fail('NEW_PATIENT_ONLY');
         var c = check(svc.id, data.date, data.hour, MC.slotHours(svc));
         if (!c.ok) return fail(c.reason);
         var b = { id: MC.uid(), token: MC.uid() + MC.uid(), serviceId: svc.id, cat: svc.cat, date: data.date, hour: data.hour,
           hours: MC.slotHours(svc), name: data.name.trim(), phone: data.phone.trim(), note: (data.note || '').trim(),
           source: staff ? 'clinica' : 'online', status: staff ? 'confirmed' : 'pending',
           childName: (data.childName || '').trim(), childAge: data.childAge == null || data.childAge === '' ? null : +data.childAge,
-          availability: (data.availability || '').trim(), evalDeclared: !!data.evalDeclared, staffNote: '',
+          availability: (data.availability || '').trim(), evalDeclared: !!data.evalDeclared, newPatient: !!data.newPatient, staffNote: '',
           createdAt: new Date().toISOString() };
         state.bookings.push(b);
         if (!staff) rememberMine(b.token);
@@ -269,7 +274,7 @@ window.MC = window.MC || {};
         serviceId: r.service_id, cat: r.cat, date: r.date, hour: r.hour, hours: r.hours,
         name: r.name || '', phone: r.phone || '', note: r.note || '', source: r.source || 'online',
         status: r.status || 'confirmed', childName: r.child_name || '', childAge: r.child_age == null ? null : r.child_age,
-        availability: r.availability || '', evalDeclared: !!r.eval_declared, staffNote: r.staff_note || '',
+        availability: r.availability || '', evalDeclared: !!r.eval_declared, newPatient: !!r.new_patient, staffNote: r.staff_note || '',
         createdAt: r.created_at
       };
     }
@@ -327,14 +332,14 @@ window.MC = window.MC || {};
           p_service_id: svc.id, p_cat: svc.cat, p_date: data.date, p_hour: data.hour, p_hours: MC.slotHours(svc),
           p_name: data.name, p_phone: data.phone, p_note: data.note || '', p_source: staff ? 'clinica' : 'online',
           p_child_name: data.childName || '', p_child_age: data.childAge === '' || data.childAge == null ? null : +data.childAge,
-          p_availability: data.availability || '', p_eval_declared: !!data.evalDeclared
+          p_availability: data.availability || '', p_eval_declared: !!data.evalDeclared, p_new_patient: !!data.newPatient
         }).then(function (res) {
           if (res.error) return fail(res.error);
           var b = { id: res.data.id, token: res.data.token, serviceId: svc.id, cat: svc.cat, date: data.date, hour: data.hour,
             hours: MC.slotHours(svc), name: data.name.trim(), phone: data.phone.trim(), note: (data.note || '').trim(),
             source: staff ? 'clinica' : 'online', status: res.data.status,
             childName: (data.childName || '').trim(), childAge: data.childAge === '' || data.childAge == null ? null : +data.childAge,
-            availability: (data.availability || '').trim(), evalDeclared: !!data.evalDeclared, staffNote: '' };
+            availability: (data.availability || '').trim(), evalDeclared: !!data.evalDeclared, newPatient: !!data.newPatient, staffNote: '' };
           state.bookings.push(b);
           if (!staff) rememberMine(b.token);
           return b;
@@ -455,6 +460,7 @@ window.MC = window.MC || {};
     countAt: countAt,
     check: check,
     evalFor: evalFor,
+    forNewPatients: forNewPatients,
     mine: mine,
 
     add: impl.add,

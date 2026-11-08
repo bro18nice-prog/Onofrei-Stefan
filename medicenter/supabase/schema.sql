@@ -49,6 +49,7 @@ alter table public.bookings add column if not exists child_name text not null de
 alter table public.bookings add column if not exists child_age smallint;
 alter table public.bookings add column if not exists availability text not null default '';
 alter table public.bookings add column if not exists eval_declared boolean not null default false;
+alter table public.bookings add column if not exists new_patient boolean not null default false;
 alter table public.bookings add column if not exists staff_note text not null default '';
 alter table public.bookings add column if not exists updated_at timestamptz not null default now();
 
@@ -154,11 +155,12 @@ $$;
 -- Programare nouă: cerere de pe site (pacient, „în așteptare”) sau din agendă (personal, „confirmată”).
 -- Întoarce { id, token, status }; pacientul primește linkul de status cu token-ul.
 drop function if exists public.book(text, text, date, int, int, text, text, text, text);
+drop function if exists public.book(text, text, date, int, int, text, text, text, text, text, int, text, boolean);
 create or replace function public.book(
   p_service_id text, p_cat text, p_date date, p_hour int, p_hours int,
   p_name text, p_phone text, p_note text default '', p_source text default 'online',
   p_child_name text default '', p_child_age int default null, p_availability text default '',
-  p_eval_declared boolean default false
+  p_eval_declared boolean default false, p_new_patient boolean default false
 ) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -183,7 +185,12 @@ begin
       raise exception 'BAD_INPUT';
     end if;
     -- terapiile marcate cer evaluarea făcută înainte la clinică
-    if coalesce(s -> 'evalRequired', '{}'::jsonb) ? p_service_id and not coalesce(p_eval_declared, false) then
+    -- pacienții noi / fără trimitere pot cere doar evaluările și consultațiile marcate
+    if coalesce(p_new_patient, false) then
+      if not (coalesce(s -> 'newPatient', '[]'::jsonb) ? p_service_id) then
+        raise exception 'NEW_PATIENT_ONLY';
+      end if;
+    elsif coalesce(s -> 'evalRequired', '{}'::jsonb) ? p_service_id and not coalesce(p_eval_declared, false) then
       raise exception 'EVAL_REQUIRED';
     end if;
     if p_date < local_now::date or (p_date = local_now::date and p_hour <= extract(hour from local_now)) then
@@ -203,11 +210,11 @@ begin
   end if;
   perform private.check_capacity(p_service_id, p_cat, p_date, p_hour, p_hours, null);
   insert into public.bookings (service_id, cat, date, hour, hours, name, phone, note, source, created_by,
-                               status, child_name, child_age, availability, eval_declared)
+                               status, child_name, child_age, availability, eval_declared, new_patient)
   values (p_service_id, p_cat, p_date, p_hour, p_hours, trim(p_name), trim(p_phone), coalesce(trim(p_note), ''),
           case when staff then coalesce(p_source, 'clinica') else 'online' end, auth.uid(),
           case when staff then 'confirmed' else 'pending' end,
-          coalesce(trim(p_child_name), ''), p_child_age, coalesce(trim(p_availability), ''), coalesce(p_eval_declared, false))
+          coalesce(trim(p_child_name), ''), p_child_age, coalesce(trim(p_availability), ''), coalesce(p_eval_declared, false), coalesce(p_new_patient, false))
   returning * into r;
   return jsonb_build_object('id', r.id, 'token', r.token, 'status', r.status);
 end $$;
@@ -303,7 +310,7 @@ revoke all on function public.set_booking_status(uuid, text, text) from public, 
 grant execute on function public.set_booking_status(uuid, text, text) to authenticated;
 grant execute on function public.get_availability(date, date) to anon, authenticated;
 grant execute on function public.get_booking_status(uuid) to anon, authenticated;
-grant execute on function public.book(text, text, date, int, int, text, text, text, text, text, int, text, boolean) to anon, authenticated;
+grant execute on function public.book(text, text, date, int, int, text, text, text, text, text, int, text, boolean, boolean) to anon, authenticated;
 grant execute on function public.my_role() to anon, authenticated;
 
 -- ---------- păstrarea datelor (GDPR) ----------
@@ -337,6 +344,7 @@ update public.settings set data = data
        'f01', 2, 'f02', 2, 'f03', 2, 'f04', 2, 'f05', 1, 'f06', 1, 'f07', 2, 'f08', 1, 'f09', 1, 'f10', 1,
        'n01', 1, 'n02', 1, 'n03', 1, 'n04', 1, 'n05', 1, 'n06', 1, 'n07', 1, 'n08', 1, 'n09', 1, 'n10', 1, 'n11', 1, 'n12', 1, 'n13', 1)) end
   || case when data ? 'evalRequired' then '{}'::jsonb else '{"evalRequired": {"k05": "k06", "k10": "k06"}}'::jsonb end
+  || case when data ? 'newPatient' then '{}'::jsonb else '{"newPatient": ["k06", "n01", "n02", "n03"]}'::jsonb end
 where id = 1;
 
 -- Primul administrator. Ceilalți membri ai personalului se adaugă apoi din agendă → Setări → Personal.
