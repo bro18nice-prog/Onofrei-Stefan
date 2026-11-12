@@ -2,14 +2,14 @@
    Culori din logo: bleumarin-ardezie pentru benzile închise, auriu-nisip din liniile decorative ca accent,
    plus câte o culoare vie pentru fiecare secție (kineto albastru, masaj teracotă, fizio turcoaz, neuro violet). */
 :root {
-  --navy: #1c2a37;
-  --navy-2: #2a4155;
-  --slate: #50677a;
-  --slate-deep: #3c5061;
-  --slate-soft: #e6eef4;
-  --sand: #e0bf8c;
-  --sand-deep: #b88a4a;
-  --sand-soft: #f7efe2;
+  --navy: #0f3550;
+  --navy-2: #124562;
+  --slate: #055578;
+  --slate-deep: #04435f;
+  --slate-soft: #e2eef5;
+  --sand: #d9a569;
+  --sand-deep: #a8722f;
+  --sand-soft: #f8efe3;
   --paper: #f3f5f8;
   --surface: #ffffff;
   --ink: #1f2a33;
@@ -72,7 +72,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn.primary { background: var(--slate); border-color: var(--slate); color: #fff; }
 .btn.primary:hover { background: var(--slate-deep); box-shadow: 0 10px 22px -10px var(--slate); }
 .btn.sand { background: var(--sand); border-color: var(--sand); color: var(--navy); }
-.btn.sand:hover { background: #ebcd9e; box-shadow: 0 12px 26px -10px rgba(224, 191, 140, .9); }
+.btn.sand:hover { background: #e4b77f; box-shadow: 0 12px 26px -10px rgba(217, 165, 105, .9); }
 .btn.outline-light { background: transparent; color: #fff; border-color: rgba(255, 255, 255, .45); }
 .btn.outline-light:hover { border-color: #fff; background: rgba(255, 255, 255, .08); }
 .btn.ghost { background: transparent; }
@@ -112,8 +112,8 @@ body.is-admin .site-head, body.is-admin .site-foot, body.is-admin .fab { display
 /* ---------- hero ---------- */
 .hero {
   position: relative; overflow: hidden; color: #fff;
-  background: radial-gradient(1200px 500px at 85% 10%, rgba(80, 103, 122, .9), transparent 60%),
-              linear-gradient(140deg, var(--navy) 0%, var(--navy-2) 60%, #35546b 100%);
+  background: radial-gradient(1200px 500px at 85% 10%, rgba(5, 85, 120, .85), transparent 60%),
+              linear-gradient(140deg, var(--navy) 0%, var(--navy-2) 60%, #1b5a7d 100%);
 }
 .hero-swirl { width: 900px; right: -180px; top: -120px; color: var(--sand); opacity: .28; }
 .hero-in { position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; padding-block: 72px 84px; align-items: center; }
@@ -244,7 +244,7 @@ body.is-admin .site-head, body.is-admin .site-foot, body.is-admin .fab { display
 /* ---------- pagini interioare ---------- */
 .page-hero {
   position: relative; overflow: hidden; color: #fff;
-  background: linear-gradient(140deg, var(--navy) 0%, var(--navy-2) 70%, #35546b 100%);
+  background: linear-gradient(140deg, var(--navy) 0%, var(--navy-2) 70%, #1b5a7d 100%);
 }
 .page-hero .wrap { position: relative; padding-block: 52px 56px; display: grid; gap: 10px; }
 .page-hero .swirl { width: 640px; right: -60px; top: -170px; color: var(--sand); opacity: .3; }
@@ -354,7 +354,7 @@ body.is-admin .site-head, body.is-admin .site-foot, body.is-admin .fab { display
 .cal .d.off { color: #c2c9cf; }
 .cal .d.full { color: var(--muted); text-decoration: line-through; background: var(--paper); }
 .cal .d.free { background: var(--slate-soft); color: var(--slate-deep); font-weight: 700; cursor: pointer; transition: background .2s, transform .2s; }
-.cal .d.free:hover { background: #d3e1ec; transform: scale(1.06); }
+.cal .d.free:hover { background: #cfe2ee; transform: scale(1.06); }
 .cal .d.sel { background: var(--navy); color: var(--sand); }
 .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; font-size: 0.8rem; color: var(--muted); }
 .lg { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
@@ -406,10 +406,10 @@ body.is-admin .site-head, body.is-admin .site-foot, body.is-admin .fab { display
 .fab {
   position: fixed; z-index: 40; right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   width: 60px; height: 60px; border-radius: 50%; background: var(--sand); color: var(--navy); display: grid; place-items: center;
-  box-shadow: 0 12px 28px -8px rgba(184, 138, 74, .8); animation: pulse 2.4s infinite;
+  box-shadow: 0 12px 28px -8px rgba(168, 114, 47, .8); animation: pulse 2.4s infinite;
 }
 .fab svg { width: 26px; }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(224, 191, 140, .7); } 70% { box-shadow: 0 0 0 16px rgba(224, 191, 140, 0); } 100% { box-shadow: 0 0 0 0 rgba(224, 191, 140, 0); } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(217, 165, 105, .7); } 70% { box-shadow: 0 0 0 16px rgba(217, 165, 105, 0); } 100% { box-shadow: 0 0 0 0 rgba(217, 165, 105, 0); } }
 
 .toast {
   position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px);
@@ -427,7 +427,7 @@ body.is-admin .site-head, body.is-admin .site-foot, body.is-admin .fab { display
 /* ---------- admin ---------- */
 .admin-login {
   min-height: 100vh; display: grid; place-items: center; padding: 24px var(--gutter-r) 24px var(--gutter-l);
-  background: linear-gradient(140deg, var(--navy) 0%, var(--navy-2) 70%, #35546b 100%); position: relative; overflow: hidden;
+  background: linear-gradient(140deg, var(--navy) 0%, var(--navy-2) 70%, #1b5a7d 100%); position: relative; overflow: hidden;
 }
 .admin-login .form { width: min(400px, 100%); gap: 8px; position: relative; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .5); }
 .login-logo { width: 210px; margin: 0 auto 10px; display: block; }
@@ -720,3 +720,10 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .member-photo.monogram { display: grid; place-items: center; }
 .team-group .section-title { margin-bottom: 20px; }
 .member-photo { height: auto; }
+
+/* slogan și specialități (din logo) */
+.slogan { font: italic 600 clamp(1.3rem, 2.4vw, 1.7rem)/1.2 var(--f-display); color: var(--sand); }
+.specialties { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; color: #c9d8e4; font-size: 0.86rem; font-weight: 600; letter-spacing: .02em; }
+.specialties li { display: flex; align-items: center; gap: 8px; }
+.specialties li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--sand); }
+.foot-tag em { display: block; font: italic 600 1.15rem/1.3 var(--f-display); color: var(--sand); margin-bottom: 6px; }

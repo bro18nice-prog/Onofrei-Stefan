@@ -76,8 +76,9 @@ window.MC = window.MC || {};
       '<section class="hero">' + MC.swirl('hero-swirl') +
         '<div class="wrap hero-in">' +
           '<div class="hero-text anim">' +
-            '<p class="eyebrow light">Recuperare medicală · Suceava</p>' +
+            '<p class="slogan">' + MC.CLINIC.tagline + '</p>' +
             '<h1>Recuperare, terapie și neurologie, <em>în centrul Sucevei.</em></h1>' +
+            '<ul class="specialties">' + MC.CLINIC.specialties.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>' +
             '<p class="lead">Kinetoterapie, masaj terapeutic, fizioterapie, neurofeedback și consultații de neurologie și psihiatrie, într-un singur loc.</p>' +
             '<div class="hero-cta">' +
               '<a class="btn sand big" href="#programare">Programează-te online ' + MC.ICONS.arrow + '</a>' +
@@ -646,7 +647,7 @@ window.MC = window.MC || {};
           '<div><h3>' + MC.esc(p.name) + '</h3><p>' + MC.esc(p.role) + '</p>' +
           '<button class="link-btn" data-action="book-svc" data-svc="' + p.book + '">Programează o consultație</button></div></article>';
       }).join('') + '</div>' +
-      '<div class="center rv"><a class="btn ghost big" href="#echipa">Cunoaște toată echipa (' + MC.TEAM.length + ') ' + MC.ICONS.arrow + '</a></div>' +
+      '<div class="center rv"><a class="btn ghost big" href="#echipa">Cunoaște toată echipa (' + MC.TEAM.map(function (p) { return p.name; }).filter(function (n, i, a) { return a.indexOf(n) === i; }).length + ') ' + MC.ICONS.arrow + '</a></div>' +
       '</div></section>';
   }
 
