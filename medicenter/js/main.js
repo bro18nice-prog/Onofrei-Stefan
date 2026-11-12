@@ -3,7 +3,7 @@ window.MC = window.MC || {};
 
 (function () {
   MC.ui = { servicesCat: 'toate' };
-  var ROUTES = ['acasa', 'servicii', 'programare', 'contact', 'confidentialitate', 'status', 'admin'];
+  var ROUTES = ['acasa', 'servicii', 'echipa', 'programare', 'contact', 'confidentialitate', 'status', 'admin'];
 
   function route() {
     var h = (location.hash || '').replace('#', '');
@@ -24,7 +24,7 @@ window.MC = window.MC || {};
     document.querySelectorAll('.nav a').forEach(function (a) {
       a.classList.toggle('on', a.getAttribute('href') === '#' + r);
     });
-    var titles = { acasa: 'Medicenter Clinic', servicii: 'Servicii și prețuri', programare: 'Programare online', contact: 'Contact', confidentialitate: 'Politica de confidențialitate', status: 'Starea cererii', admin: 'Agenda clinicii' };
+    var titles = { acasa: 'Medicenter Clinic', servicii: 'Servicii și prețuri', echipa: 'Echipa', programare: 'Programare online', contact: 'Contact', confidentialitate: 'Politica de confidențialitate', status: 'Starea cererii', admin: 'Agenda clinicii' };
     document.title = titles[r] + (r === 'acasa' ? ' · Suceava' : ' · Medicenter Clinic');
     document.getElementById('menu').classList.remove('open');
     reveal();

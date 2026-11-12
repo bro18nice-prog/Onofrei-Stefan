@@ -694,3 +694,28 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .tag.new { background: #e9e4f5; color: #6a4b9a; }
 .svc-row { grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 200px); }
 @media (max-width: 760px) { .svc-row { grid-template-columns: minmax(0, 1fr) auto; } }
+
+/* ---------- echipa ---------- */
+.monogram { display: grid; place-items: center; background: linear-gradient(150deg, var(--slate-soft), #d6e1ea); color: var(--slate-deep);
+  font: 700 2.4rem/1 var(--f-display); letter-spacing: .04em; }
+.team-sec { background: var(--surface); border-block: 1px solid var(--line); }
+.doc-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.doc { display: grid; gap: 14px; text-align: center; justify-items: center; }
+.doc-photo { width: 180px; height: 180px; border-radius: 50%; object-fit: cover; object-position: center 20%; box-shadow: 0 0 0 6px var(--sand-soft); }
+.doc h3 { font: 700 1.35rem/1.2 var(--f-display); }
+.doc p { color: var(--muted); font-size: 0.94rem; }
+.center { text-align: center; margin-top: 36px; }
+.team-intro { max-width: 760px; display: grid; gap: 12px; font-size: 1.08rem; color: var(--ink); }
+.team-group { margin-top: 30px; }
+.members { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
+.member { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.member-photo { width: 100%; aspect-ratio: 4 / 3.4; object-fit: cover; object-position: center 18%; display: block; }
+.member-photo.monogram { font-size: 3.4rem; }
+.member-body { padding: 20px 22px 22px; display: grid; gap: 10px; align-content: start; }
+.member-body h3 { font: 700 1.45rem/1.15 var(--f-display); }
+.member-role { color: var(--sand-deep); font-weight: 700; font-size: 0.9rem; }
+.member-body p:not(.member-role) { color: var(--muted); font-size: 0.94rem; }
+.member-body .btn { justify-self: start; margin-top: 4px; }
+@media (max-width: 860px) { .doc-cards { grid-template-columns: minmax(0, 1fr); } .members { grid-template-columns: minmax(0, 1fr); } }
+.member-photo.monogram { display: grid; place-items: center; }
+.team-group .section-title { margin-bottom: 20px; }

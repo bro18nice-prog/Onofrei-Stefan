@@ -23,7 +23,7 @@ const out = [
   `<style>\n${read('css/style.css')}\n</style>`,
   body.trim(),
   `<script>\n${scripts.join('\n')}\n</script>`
-].join('\n').replaceAll('href="agenda.html"', 'href="#admin"').replace(/img\/[\w-]+\.png/g, (p) => 'data:image/png;base64,' + readFileSync(join(root, p)).toString('base64'));
+].join('\n').replaceAll('href="agenda.html"', 'href="#admin"').replace(/img\/[\w\/-]+\.(png|jpg)/g, (p, ext) => 'data:image/' + (ext === 'jpg' ? 'jpeg' : 'png') + ';base64,' + readFileSync(join(root, p)).toString('base64'));
 
 mkdirSync(join(root, 'dist'), { recursive: true });
 writeFileSync(join(root, 'dist/medicenter-demo.html'), out);

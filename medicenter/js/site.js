@@ -130,6 +130,7 @@ window.MC = window.MC || {};
         }).join('') + '</div>' +
       '</div></section>' +
 
+      teamPreview() +
       '<section class="sec methods-sec"><div class="wrap methods rv">' +
         '<div><p class="eyebrow">Metode și aparatură</p><h2>Ce folosim în terapie</h2></div>' +
         '<ul class="method-chips">' + methods.map(function (m, i) {
@@ -597,6 +598,58 @@ window.MC = window.MC || {};
     return true;
   };
 
+  /* ---------- Echipa ---------- */
+
+  function initials(name) {
+    return name.replace(/^Dr\.\s*/, '').split(/[\s-]+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('');
+  }
+  function portrait(p, cls) {
+    return p.photo
+      ? '<img class="' + cls + '" src="' + p.photo + '" alt="' + MC.esc(p.name) + '" loading="lazy" width="600" height="800">'
+      : '<span class="' + cls + ' monogram" aria-hidden="true">' + MC.esc(initials(p.name)) + '</span>';
+  }
+  function memberCard(p) {
+    var svc = p.book && MC.serviceById(p.book);
+    return '<article class="member rv">' + portrait(p, 'member-photo') +
+      '<div class="member-body"><h3>' + MC.esc(p.name) + '</h3><p class="member-role">' + MC.esc(p.role) + '</p>' +
+      p.bio.map(function (t) { return '<p>' + MC.esc(t) + '</p>'; }).join('') +
+      (svc ? '<button class="btn small primary" data-action="book-svc" data-svc="' + svc.id + '">Programează o consultație</button>' : '') +
+      '</div></article>';
+  }
+
+  function team() {
+    return pageHero('Echipa', 'Echipa Medicenter Clinic', 'Profesionalism, empatie și dedicare pentru sănătatea fiecărui pacient.') +
+      '<section class="wrap page team-page">' +
+        '<div class="team-intro rv"><p>La Medicenter Clinic, credem că îngrijirea medicală de calitate începe cu oameni dedicați, pregătire profesională continuă și atenție acordată nevoilor fiecărui pacient.</p>' +
+        '<p>Echipa noastră reunește medici specialiști, fizioterapeuți și asistenți medicali, oferind o abordare multidisciplinară în evaluarea, diagnosticarea și recuperarea pacienților.</p></div>' +
+        MC.TEAM_GROUPS.map(function (g) {
+          return '<div class="team-group"><h2 class="section-title">' + g.name + '</h2><div class="members">' +
+            MC.TEAM.filter(function (p) { return p.group === g.id; }).map(memberCard).join('') + '</div></div>';
+        }).join('') +
+      '</section>' +
+      '<section class="cta-band">' + MC.swirl() + '<div class="wrap cta-in rv">' +
+        '<div><h2>O echipă multidisciplinară. O abordare personalizată. Grijă pentru fiecare pacient.</h2>' +
+        '<p>Îmbinăm experiența profesională, metodele moderne de evaluare și recuperare și respectul față de fiecare persoană care ne trece pragul. ' +
+        'Pentru noi, fiecare pacient este unic, iar sănătatea sa reprezintă prioritatea noastră.</p></div>' +
+        '<div class="hero-cta"><a class="btn sand big" href="#programare">Programează-te online ' + MC.ICONS.arrow + '</a></div>' +
+      '</div></section>';
+  }
+
+  /* Secțiunea „Echipa” de pe prima pagină: medicii, cu link spre toată echipa. */
+  function teamPreview() {
+    var docs = MC.TEAM.filter(function (p) { return p.group === 'medici'; });
+    return '<section class="sec team-sec"><div class="wrap">' +
+      '<div class="sec-head rv"><p class="eyebrow">Echipa</p><h2>Medici și terapeuți dedicați</h2>' +
+        '<p class="muted">Medici specialiști, fizioterapeuți și asistenți medicali, într-o echipă multidisciplinară.</p></div>' +
+      '<div class="doc-cards">' + docs.map(function (p) {
+        return '<article class="doc rv">' + portrait(p, 'doc-photo') +
+          '<div><h3>' + MC.esc(p.name) + '</h3><p>' + MC.esc(p.role) + '</p>' +
+          '<button class="link-btn" data-action="book-svc" data-svc="' + p.book + '">Programează o consultație</button></div></article>';
+      }).join('') + '</div>' +
+      '<div class="center rv"><a class="btn ghost big" href="#echipa">Cunoaște toată echipa (' + MC.TEAM.length + ') ' + MC.ICONS.arrow + '</a></div>' +
+      '</div></section>';
+  }
+
   /* ---------- Politica de confidențialitate ---------- */
 
   function privacy() {
@@ -617,5 +670,5 @@ window.MC = window.MC || {};
       '</div></section>';
   }
 
-  MC.pages = { acasa: home, servicii: services, programare: booking, contact: contact, confidentialitate: privacy, status: statusPage };
+  MC.pages = { acasa: home, servicii: services, echipa: team, programare: booking, contact: contact, confidentialitate: privacy, status: statusPage };
 })();
