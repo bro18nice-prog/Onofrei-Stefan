@@ -136,10 +136,10 @@ MC.TEAM_GROUPS = [
   { id: 'asistenta', name: 'Echipa de asistență medicală și neurofeedback' }
 ];
 MC.TEAM = [
-  { group: 'medici', name: 'Dr. Darie Ludmila', role: 'Medic specialist Neurologie Pediatrică', photo: '', book: 'n01',
+  { group: 'medici', name: 'Dr. Darie Ludmila', role: 'Medic specialist Neurologie Pediatrică', photo: 'img/echipa/darie-ludmila.jpg', book: 'n01',
     bio: ['Cu pregătire de specialitate în neurologia pediatrică, Dr. Darie Ludmila este dedicată evaluării, diagnosticării și monitorizării afecțiunilor neurologice la copii și adolescenți.',
       'Activitatea sa medicală urmărește identificarea și gestionarea tulburărilor neurologice și de neurodezvoltare, printr-o abordare adaptată particularităților fiecărei etape de dezvoltare.'] },
-  { group: 'medici', name: 'Dr. Ciungan Mihai', role: 'Medic specialist Psihiatrie Pediatrică', photo: '', book: 'n02',
+  { group: 'medici', name: 'Dr. Ciungan Mihai', role: 'Medic specialist Psihiatrie Pediatrică', photo: 'img/echipa/ciungan-mihai.jpg', book: 'n02',
     bio: ['Specializat în evaluarea, diagnosticarea și tratarea tulburărilor de sănătate mintală la copii și adolescenți, Dr. Ciungan Mihai oferă o abordare medicală adaptată nevoilor emoționale, comportamentale și de dezvoltare ale pacienților tineri.',
       'Prin evaluare clinică și recomandări terapeutice individualizate, urmărește susținerea echilibrului emoțional și a dezvoltării armonioase, în colaborare cu familia.'] },
   { group: 'medici', name: 'Dr. Stroiștean-Spătariu Bianca', role: 'Medic primar Psihiatrie', photo: '', book: 'n03',
@@ -152,16 +152,16 @@ MC.TEAM = [
     bio: ['Cu competențe în reeducarea articulației temporomandibulare (ATM), recuperarea diastazei abdominale și reabilitarea planșeului pelvin, Andreea abordează fiecare pacient prin programe terapeutice individualizate, adaptate nevoilor funcționale specifice.',
       'Pregătirea sa profesională este completată de certificări internaționale în Neurofeedback și BrainMap (cartografierea activității cerebrale), îmbinând astfel experiența în recuperarea funcțională cu tehnologiile moderne de evaluare și antrenament neurofuncțional.',
       'Această pregătire multidisciplinară îi permite să contribuie atât la procesul de recuperare fizică, cât și la programele de evaluare și antrenament cerebral desfășurate în cadrul clinicii.'] },
-  { group: 'fizio', name: 'Aivanoaiei Raluca Georgiana', role: 'Fizioterapeut · Terapia Schroth & Recuperare Musculoscheletală', photo: '', book: '',
+  { group: 'fizio', name: 'Aivanoaiei Raluca Georgiana', role: 'Fizioterapeut · Terapia Schroth & Recuperare Musculoscheletală', photo: 'img/echipa/aivanoaiei-raluca.jpg', book: '',
     bio: ['Cu pregătire în Terapia Schroth, tehnici de detensionare miofascială și reeducarea articulației temporomandibulare (ATM), Raluca este dedicată recuperării mobilității, îmbunătățirii posturii și reducerii disconfortului musculoscheletal.',
       'Abordarea sa terapeutică urmărește identificarea dezechilibrelor funcționale și aplicarea unor tehnici adaptate particularităților fiecărui pacient.'] },
-  { group: 'fizio', name: 'Maruneac Diana Paula', role: 'Fizioterapeut · Terapia Punctelor Trigger & Recuperare Limfatică', photo: '', book: '',
+  { group: 'fizio', name: 'Maruneac Diana Paula', role: 'Fizioterapeut · Terapia Punctelor Trigger & Recuperare Limfatică', photo: 'img/echipa/maruneac-paula.jpg', book: '',
     bio: ['Cu pregătire în terapia punctelor trigger, drenaj limfatic manual și bandajare compresivă multistrat, Paula contribuie la recuperarea pacienților care prezintă dureri musculare, tensiuni miofasciale sau tulburări ale circulației limfatice.',
       'Un domeniu important al activității sale îl reprezintă managementul limfedemului, inclusiv în cazul pacienților oncologici, prin aplicarea tehnicilor de drenaj limfatic și compresie terapeutică.'] },
-  { group: 'asistenta', name: 'Iremiciuc Mihaela', role: 'Asistent medical generalist · Electroencefalografie (EEG) & Neurofeedback', photo: '', book: '',
+  { group: 'asistenta', name: 'Iremiciuc Mihaela', role: 'Asistent medical generalist · Electroencefalografie (EEG) & Neurofeedback', photo: 'img/echipa/iremiciuc-mihaela.jpg', book: '',
     bio: ['Cu pregătire în efectuarea electroencefalogramelor (EEG) și desfășurarea ședințelor de Neurofeedback, Mihaela contribuie la realizarea evaluărilor neurofiziologice și la aplicarea protocoalelor individualizate de antrenament cerebral.',
       'Prin atenție, responsabilitate și implicare, urmărește asigurarea unui mediu confortabil și sigur pentru fiecare pacient.'] },
-  { group: 'asistenta', name: 'Roibu Ana Marcela', role: 'Asistent medical generalist · Electroencefalografie (EEG) & Neurofeedback', photo: '', book: '',
+  { group: 'asistenta', name: 'Roibu Ana Marcela', role: 'Asistent medical generalist · Electroencefalografie (EEG) & Neurofeedback', photo: 'img/echipa/roibu-ana.jpg', book: '',
     bio: ['Cu competențe în efectuarea investigațiilor electroencefalografice (EEG) și realizarea ședințelor de Neurofeedback, Ana participă la procesul de evaluare și antrenament neurofuncțional.',
       'Activitatea sa se bazează pe atenția acordată fiecărui pacient, respectarea protocoalelor de lucru și susținerea unei experiențe medicale caracterizate prin profesionalism și empatie.'] }
 ];

@@ -719,3 +719,4 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 @media (max-width: 860px) { .doc-cards { grid-template-columns: minmax(0, 1fr); } .members { grid-template-columns: minmax(0, 1fr); } }
 .member-photo.monogram { display: grid; place-items: center; }
 .team-group .section-title { margin-bottom: 20px; }
+.member-photo { height: auto; }
