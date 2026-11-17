@@ -51,6 +51,8 @@ window.MC = window.MC || {};
     if (code) return ERRORS[code];
     if (/Invalid login credentials/i.test(m)) return 'Emailul sau parola nu sunt corecte.';
     if (/Email not confirmed/i.test(m)) return 'Emailul nu este confirmat încă. Deschide linkul primit pe email.';
+    if (/Email address not authorized|not authorized/i.test(m)) return 'Nu putem trimite email la această adresă. Cere administratorului să creeze contul din Supabase.';
+    if (/rate limit|too many/i.test(m)) return 'Prea multe emailuri trimise în ultima oră. Încearcă din nou mai târziu.';
     if (/User already registered/i.test(m)) return 'Există deja un cont cu acest email. Folosește „Am uitat parola”.';
     if (/Password should be/i.test(m)) return 'Parola trebuie să aibă cel puțin 8 caractere.';
     if (/fetch|network/i.test(m)) return 'Nu există conexiune la internet. Încearcă din nou.';

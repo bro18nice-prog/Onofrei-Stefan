@@ -10,6 +10,11 @@ window.MC = window.MC || {};
     return ROUTES.indexOf(h) >= 0 ? h : (document.body.dataset.home || 'acasa');
   }
 
+  /* Agenda (agenda.html) se poate instala pe telefon ca aplicație. */
+  if (document.body.dataset.home === 'admin' && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+
   MC.go = function (name) {
     if (location.hash === '#' + name) MC.render();
     else location.hash = name;

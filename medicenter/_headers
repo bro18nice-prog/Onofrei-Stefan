@@ -16,3 +16,7 @@
   X-Robots-Tag: noindex, nofollow
 /index.html
   Cache-Control: no-cache
+/sw.js
+  Cache-Control: no-cache
+/agenda.webmanifest
+  Content-Type: application/manifest+json

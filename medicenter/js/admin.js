@@ -97,6 +97,7 @@ window.MC = window.MC || {};
         '<nav class="adm-tabs">' +
           '<button class="' + (t === 'agenda' ? 'on' : '') + '" data-action="adm-tab" data-tab="agenda">Agenda</button>' +
           (admin ? '<button class="' + (t === 'setari' ? 'on' : '') + '" data-action="adm-tab" data-tab="setari">Setări</button>' : '') +
+          '<button class="' + (t === 'cont' ? 'on' : '') + '" data-action="adm-tab" data-tab="cont">Cont și telefon</button>' +
         '</nav>' +
         '<div class="adm-bar-right">' +
           (MC.store.email() ? '<span class="who">' + MC.esc(MC.store.email()) + '</span>' : '') +
@@ -473,12 +474,48 @@ window.MC = window.MC || {};
       '</form></div>';
   }
 
+  /* ---------- cont: parolă și instalare pe telefon ---------- */
+
+  /* Chrome pe Android anunță că aplicația se poate instala; păstrăm evenimentul pentru butonul „Instalează”. */
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); MC.adm.installEvt = e; if (MC.adm.tab === 'cont') MC.render(); });
+  function standalone() {
+    return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  }
+  function account() {
+    var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var installed = standalone();
+    return shell('<div class="adm-settings wrap">' +
+      '<div class="card form install-card">' +
+        '<h1 class="adm-title">Agenda pe telefon</h1>' +
+        (installed ? '<p class="info-box ok">Agenda este deja instalată pe acest telefon.</p>' :
+          (MC.adm.installEvt ? '<button class="btn primary" data-action="adm-install">Instalează agenda pe acest telefon</button>' : '')) +
+        '<div class="install-steps">' +
+          '<section' + (ios ? ' class="here"' : '') + '><h3>iPhone (Safari)</h3><ol>' +
+            '<li>Deschide agenda în <b>Safari</b>.</li><li>Apasă butonul <b>Partajează</b> (pătratul cu săgeată în sus).</li>' +
+            '<li>Alege <b>Adaugă pe ecranul principal</b> (Add to Home Screen), apoi <b>Adaugă</b>.</li></ol></section>' +
+          '<section' + (!ios ? ' class="here"' : '') + '><h3>Android (Chrome)</h3><ol>' +
+            '<li>Deschide agenda în <b>Chrome</b>.</li><li>Apasă meniul <b>⋮</b> din dreapta sus.</li>' +
+            '<li>Alege <b>Instalează aplicația</b> sau <b>Adaugă pe ecranul de pornire</b>.</li></ol></section>' +
+        '</div>' +
+        '<p class="muted small">Pe ecran apare iconița <b>Agenda</b>. Se deschide ca o aplicație, fără bara browserului, și rămâi conectat.</p>' +
+      '</div>' +
+      '<form class="card form" id="adm-pass-form" novalidate>' +
+        '<h3>Schimbă parola</h3>' +
+        '<p class="muted small">Contul: ' + MC.esc(MC.store.email() || '') + '. Dacă folosiți un cont comun, după schimbare anunță colegii parola nouă.</p>' +
+        '<div class="row2"><div><label for="np-1">Parola nouă</label><input id="np-1" type="password" autocomplete="new-password" minlength="8"></div>' +
+        '<div><label for="np-2">Scrie-o din nou</label><input id="np-2" type="password" autocomplete="new-password" minlength="8"></div></div>' +
+        '<p class="form-error" id="np-error" role="alert" hidden></p>' +
+        '<button class="btn primary" type="submit">Salvează parola</button>' +
+      '</form></div>');
+  }
+
   /* ---------- pagina ---------- */
 
   MC.pages.admin = function () {
     document.body.classList.add('is-admin');
     if (!MC.store.role() || MC.store.isRecovery()) return login();
     if (MC.adm.tab === 'setari' && MC.store.role() === 'admin') return settings();
+    if (MC.adm.tab === 'cont') return account();
     return agenda();
   };
 
@@ -508,6 +545,12 @@ window.MC = window.MC || {};
 
   MC.adminActions = {
     'adm-tab': function (el) { MC.adm.tab = el.dataset.tab; MC.adm.confirm = null; MC.render(); },
+    'adm-install': function () {
+      var e = MC.adm.installEvt;
+      if (!e) return;
+      e.prompt();
+      e.userChoice.then(function () { MC.adm.installEvt = null; MC.render(); });
+    },
     'adm-auth': function (el) { MC.adm.auth = el.dataset.to; MC.render(); },
     'adm-logout': function () {
       MC.store.signOut().then(function () {
@@ -611,6 +654,15 @@ window.MC = window.MC || {};
       } else {
         run(MC.store.signIn(email, pass), null, 'adm-error').then(MC.render, function () {});
       }
+      return true;
+    }
+    if (form.id === 'adm-pass-form') {
+      var p1 = val('np-1'), p2 = val('np-2');
+      if (p1.length < 8 || !/\d/.test(p1) || !/[a-zA-Z]/.test(p1)) { showErr('np-error', 'Parola trebuie să aibă cel puțin 8 caractere, cu litere și cifre.'); return true; }
+      if (p1 !== p2) { showErr('np-error', 'Cele două parole nu sunt la fel.'); return true; }
+      if (!MC.store.live) { MC.toast('În demo parola nu se schimbă.', 'ok'); return true; }
+      document.getElementById('np-error').hidden = true;
+      run(MC.store.updatePassword(p1), 'Parola a fost schimbată.', 'np-error').then(function () { form.reset(); }, function () {});
       return true;
     }
     if (form.id === 'adm-move') {

@@ -720,3 +720,11 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .specialties li { display: flex; align-items: center; gap: 8px; }
 .specialties li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--sand); }
 .foot-tag em { display: block; font: italic 600 1.15rem/1.3 var(--f-display); color: var(--sand); margin-bottom: 6px; }
+
+/* agenda pe telefon */
+.install-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.install-steps section { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.install-steps section.here { border-color: var(--slate); background: var(--slate-soft); }
+.install-steps h3 { margin: 0 0 6px; }
+.install-steps ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+@media (max-width: 640px) { .install-steps { grid-template-columns: minmax(0, 1fr); } }
