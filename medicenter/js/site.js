@@ -30,24 +30,6 @@ window.MC = window.MC || {};
     return slots.some(function (x) { return x.free > 0; }) ? 'free' : 'full';
   }
 
-  /* Primele ore libere, pentru widgetul de pe prima pagină. */
-  function nextFree(limit) {
-    var s = MC.store.settings();
-    var res = [];
-    var probe = { k: 'k01', m: 'm05', f: 'f01', n: 'n03' };
-    for (var i = 0; i < 14 && res.length < limit; i++) {
-      var d = MC.addDays(MC.today(), i);
-      if (s.days.indexOf(d.getDay()) < 0) continue;
-      MC.CATS.forEach(function (c) {
-        if (res.length >= limit || res.some(function (x) { return x.cat === c.id; })) return;
-        var svc = MC.serviceById(probe[c.id.charAt(0)]);
-        var slot = MC.slotsFor(svc, MC.ymd(d)).find(function (x) { return x.free > 0; });
-        if (slot) res.push({ cat: c.id, svc: svc, date: MC.ymd(d), hour: slot.hour, free: slot.free });
-      });
-    }
-    return res;
-  }
-
   /* ---------- elemente comune ---------- */
 
   /* Liniile decorative inspirate din logo. */
@@ -67,88 +49,132 @@ window.MC = window.MC || {};
 
   /* ---------- Acasă ---------- */
 
+  var DAY_NAMES = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
+  /* „Luni – vineri”, „Luni – sâmbătă” sau lista zilelor, din setările clinicii. */
+  function daysLabel() {
+    var d = MC.store.settings().days.slice().sort();
+    var run = d.length > 1 && d.every(function (x, i) { return i === 0 || x === d[i - 1] + 1; });
+    if (run) return MC.cap(DAY_NAMES[d[0]]) + ' – ' + DAY_NAMES[d[d.length - 1]];
+    return MC.cap(d.map(function (x) { return DAY_NAMES[x]; }).join(', '));
+  }
+
+  /* Programarea rapidă de pe prima pagină: serviciu, pentru cine, zi, oră. */
+  function quickState() {
+    var q = MC.ui.qb || (MC.ui.qb = { svc: 'k01', who: 'self', date: null, hour: null });
+    var svc = MC.serviceById(q.svc);
+    var s = MC.store.settings();
+    var days = [];
+    for (var i = 0; i <= s.maxDaysAhead && days.length < 21; i++) {
+      var d = MC.addDays(MC.today(), i);
+      if (dateBookable(svc, d) === 'free') days.push(MC.ymd(d));
+    }
+    if (days.indexOf(q.date) < 0) q.date = days[0] || null;
+    var hours = q.date ? MC.slotsFor(svc, q.date).filter(function (x) { return x.free > 0; }) : [];
+    if (!hours.some(function (x) { return x.hour === q.hour; })) q.hour = hours.length ? hours[0].hour : null;
+    return { q: q, svc: svc, days: days, hours: hours };
+  }
+  function opt(value, label, sel) {
+    return '<option value="' + value + '"' + (sel ? ' selected' : '') + '>' + label + '</option>';
+  }
+  function quickBook() {
+    var st = quickState(), q = st.q;
+    var svcOpts = MC.CATS.map(function (c) {
+      return '<optgroup label="' + MC.esc(c.name) + '">' + MC.SERVICES.filter(function (s) { return s.cat === c.id; }).map(function (s) {
+        return opt(s.id, MC.esc(s.name + (s.durLabel ? ' · ' + s.durLabel : '')), s.id === q.svc);
+      }).join('') + '</optgroup>';
+    }).join('');
+    var dayOpts = st.days.length ? st.days.map(function (d) { return opt(d, MC.cap(MC.fmtDate(d)), d === q.date); }).join('')
+      : opt('', 'Nicio zi liberă', true);
+    var hourOpts = st.hours.length ? st.hours.map(function (x) { return opt(x.hour, MC.hourLabel(x.hour), x.hour === q.hour); }).join('')
+      : opt('', '–', true);
+    return '<div class="qb-head"><h2>Programează-te online</h2><p>Clinica îți confirmă ora telefonic sau pe WhatsApp</p></div>' +
+      '<div class="qb-fields">' +
+        '<label class="qb-f qb-svc"><span>Serviciu</span><select data-change="qb" data-key="svc">' + svcOpts + '</select></label>' +
+        '<label class="qb-f"><span>Pentru cine</span><select data-change="qb" data-key="who">' +
+          opt('self', 'Pentru mine', q.who === 'self') + opt('child', 'Pentru copilul meu', q.who === 'child') + '</select></label>' +
+        '<label class="qb-f"><span>Ziua</span><select data-change="qb" data-key="date"' + (st.days.length ? '' : ' disabled') + '>' + dayOpts + '</select></label>' +
+        '<label class="qb-f"><span>Ora</span><select data-change="qb" data-key="hour"' + (st.hours.length ? '' : ' disabled') + '>' + hourOpts + '</select></label>' +
+        '<button class="btn primary qb-go" data-action="qb-go"' + (q.hour == null ? ' disabled' : '') + '>Continuă ' + MC.ICONS.arrow + '</button>' +
+      '</div>';
+  }
+
+  function uniquePeople(list) {
+    return list.filter(function (p, i) { return list.findIndex(function (x) { return x.name === p.name; }) === i; });
+  }
+
   function home() {
-    var free = nextFree(4);
-    var examples = { kineto: ['k01', 'k04', 'k05'], masaj: ['m06', 'm01', 'm11'], fizio: ['f05', 'f06', 'f02'], neuro: ['n06', 'n12', 'n05'] };
-    var methods = ['RPG', 'Schroth', 'Tecar', 'Deep Oscillation', 'Neurofeedback', 'Brainmap', 'EEG', 'Kinesio taping',
-      'Drenaj limfatic', 'Reflexoterapie', 'Laserterapie', 'Magnetoterapie', 'Ultrasunete', 'Recuperare ATM'];
+    var docs = MC.TEAM.filter(function (p) { return p.group === 'medici'; });
+    var others = uniquePeople(MC.TEAM.filter(function (p) { return p.group !== 'medici'; }));
+    var spec = [
+      ['Psihiatrie', 'Evaluare și tratament pentru adulți', 'book-svc', 'n03'],
+      ['Psihiatrie pediatrică', 'Copii și adolescenți, în colaborare cu familia', 'book-svc', 'n02'],
+      ['Neurologie pediatrică', 'Afecțiuni neurologice și de neurodezvoltare', 'book-svc', 'n01'],
+      ['Recuperare medicală', 'Kinetoterapie, Schroth, RPG, masaj și fizioterapie', 'goto-cat', 'kineto'],
+      ['Neurofeedback', 'EEG, Brainmap și antrenament neuronal', 'goto-cat', 'neuro']
+    ];
+    var methods = ['Schroth', 'RPG', 'Tecar', 'Deep Oscillation', 'Neurofeedback', 'EEG', 'Kinesio taping', 'Drenaj limfatic'];
+    var s = MC.store.settings();
     return '' +
-      '<section class="hero">' + MC.swirl('hero-swirl') +
-        '<div class="wrap hero-in">' +
-          '<div class="hero-text anim">' +
-            '<p class="slogan">' + MC.CLINIC.tagline + '</p>' +
-            '<h1>Recuperare, terapie și neurologie, <em>în centrul Sucevei.</em></h1>' +
-            '<ul class="specialties">' + MC.CLINIC.specialties.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul>' +
-            '<p class="lead">Kinetoterapie, masaj terapeutic, fizioterapie, neurofeedback și consultații de neurologie și psihiatrie, într-un singur loc.</p>' +
-            '<div class="hero-cta">' +
-              '<a class="btn sand big" href="#programare">Programează-te online ' + MC.ICONS.arrow + '</a>' +
-              '<a class="btn outline-light big" href="' + C.phoneHref + '">' + MC.ICONS.phone + C.phone + '</a>' +
-            '</div>' +
-            '<ul class="facts">' +
-              '<li>' + icon('pin') + '<span><small>Adresă</small>' + C.address + '</span></li>' +
-              '<li>' + icon('clock') + '<span><small>Program</small>' + C.hours + '</span></li>' +
-            '</ul>' +
+      '<section class="hero">' +
+        '<img class="hero-img" src="img/hero.jpg" alt="" width="900" height="1530" fetchpriority="high">' +
+        '<div class="wrap hero-in"><div class="hero-text anim">' +
+          '<p class="slogan">' + C.tagline + '</p>' +
+          '<h1>Clinica ta de recuperare și sănătate mintală.</h1>' +
+          '<p class="lead">Psihiatrie, neurologie pediatrică, recuperare medicală și neurofeedback, pentru copii și adulți, în centrul Sucevei.</p>' +
+          '<div class="hero-cta">' +
+            '<a class="btn sand big" href="#programare">Cere o programare ' + MC.ICONS.arrow + '</a>' +
+            '<a class="btn outline-light big" href="#servicii">Vezi prețurile</a>' +
           '</div>' +
-          '<div class="hero-visual anim d2">' +
-            '<div class="photo hero-photo">' + MC.swirl() + '<span class="photo-icons">' +
-              MC.CATS.map(function (c) { return '<i style="--cat:' + c.color + '">' + MC.ICONS[c.icon] + '</i>'; }).join('') + '</span></div>' +
-            '<span class="float-badge">' + MC.ICONS.check + 'Programări online non-stop</span>' +
-            '<aside class="nextfree" aria-label="Primele ore libere">' +
-              '<h2>Primele ore libere</h2>' +
-              '<ul>' + free.map(function (x) {
-                var c = MC.catById(x.cat);
-                return '<li><button class="nf" style="--cat:' + c.color + '" data-action="quick-book" data-svc="' + x.svc.id + '" data-date="' + x.date + '" data-hour="' + x.hour + '">' +
-                  '<span class="nf-ico">' + MC.ICONS[c.icon] + '</span>' +
-                  '<span class="nf-main"><b>' + c.short + '</b><small>' + MC.cap(MC.fmtDate(x.date)) + '</small></span>' +
-                  '<span class="nf-time">' + MC.hourLabel(x.hour) + '</span></button></li>';
-              }).join('') + '</ul>' +
-            '</aside>' +
-          '</div>' +
-        '</div>' +
+        '</div></div>' +
       '</section>' +
 
-      '<section class="stats"><div class="wrap stats-in">' +
-        '<div><b>' + MC.SERVICES.length + '</b><span>servicii și pachete</span></div>' +
-        '<div><b>' + MC.CATS.length + '</b><span>secții medicale</span></div>' +
-        '<div><b>09–20</b><span>program zilnic</span></div>' +
-        '<div><b>1 min</b><span>durează programarea</span></div>' +
+      '<div class="wrap qb-wrap"><div class="qb anim d2" id="qb">' + quickBook() + '</div></div>' +
+
+      '<div class="wrap tiles">' +
+        '<a class="tile" href="' + C.phoneHref + '">' + icon('phone') + '<span><b>Sună-ne</b>' + C.phone + '</span></a>' +
+        '<div class="tile">' + icon('clock') + '<span><b>Program</b>' + daysLabel() + ', ' + MC.hourLabel(s.open) + '–' + MC.hourLabel(s.close) + '</span></div>' +
+        '<a class="tile" href="' + C.mapsUrl + '" target="_blank" rel="noopener">' + icon('pin') + '<span><b>Adresa</b>' + C.address.replace(/, Suceava$/, '') + '</span></a>' +
+        '<button class="tile" data-action="new-patient">' + icon('star') + '<span><b>Pacient nou?</b>Începe cu o evaluare</span></button>' +
+      '</div>' +
+
+      '<section class="sec"><div class="wrap split">' +
+        '<div class="rv"><p class="eyebrow">Specialități</p><h2>Tot ce ai nevoie, sub același acoperiș</h2>' +
+          '<ol class="spec-list">' + spec.map(function (x, i) {
+            var attr = x[2] === 'book-svc' ? 'data-svc="' + x[3] + '"' : 'data-cat="' + x[3] + '"';
+            return '<li><button data-action="' + x[2] + '" ' + attr + '><b>0' + (i + 1) + '</b>' +
+              '<span><strong>' + x[0] + '</strong><small>' + x[1] + '</small></span>' + MC.ICONS.arrow + '</button></li>';
+          }).join('') + '</ol></div>' +
+        '<figure class="feature rv"><img src="img/clinica.jpg" alt="Terapeută Medicenter lângă aparatura de recuperare" loading="lazy" width="800" height="1067">' +
+          '<figcaption><b>Metode moderne de recuperare</b><span>Aparatură și tehnici folosite în clinică</span>' +
+          '<ul>' + methods.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul></figcaption></figure>' +
       '</div></section>' +
 
-      '<section class="sec"><div class="wrap">' +
-        '<div class="sec-head rv"><p class="eyebrow">Servicii</p><h2>Cu ce te putem ajuta</h2>' +
-          '<p class="muted">Patru secții, de la recuperare după accidentări până la evaluări neurologice.</p></div>' +
-        '<div class="cats">' + MC.CATS.map(function (c) {
-          return '<article class="cat rv" style="--cat:' + c.color + '">' +
-            '<div class="photo cat-photo">' + MC.swirl() + '<span class="cat-ico">' + MC.ICONS[c.icon] + '</span></div>' +
-            '<div class="cat-body"><h3>' + c.name + '</h3><p>' + c.blurb + '</p>' +
-            '<ul class="cat-list">' + examples[c.id].map(function (id) {
-              var sv = MC.serviceById(id);
-              return '<li><span>' + MC.esc(sv.name.replace(/\s*\(.*\)/, '')) + (sv.durLabel ? ' · ' + sv.durLabel : '') + '</span><b>' + sv.price.replace(/ \/ .*/, '') + '</b></li>';
-            }).join('') + '</ul>' +
-            '<a class="cat-link" href="#servicii" data-action="goto-cat" data-cat="' + c.id + '">Toate cele ' +
-              MC.SERVICES.filter(function (s) { return s.cat === c.id; }).length + ' servicii ' + MC.ICONS.arrow + '</a></div>' +
-          '</article>';
+      '<section class="sec docs-sec"><div class="wrap">' +
+        '<div class="rv"><p class="eyebrow">Medicii noștri</p><h2>Programează-te direct la medic</h2></div>' +
+        '<div class="doc-grid">' + docs.map(function (p) {
+          return '<article class="doc-card rv">' + portrait(p, 'doc-img') +
+            '<div><h3>' + MC.esc(p.name) + '</h3><p>' + MC.esc(p.role) + '</p>' +
+            '<button class="btn primary block" data-action="book-svc" data-svc="' + p.book + '">Programează consultația</button></div></article>';
         }).join('') + '</div>' +
       '</div></section>' +
 
-      teamPreview() +
-      '<section class="sec methods-sec"><div class="wrap methods rv">' +
-        '<div><p class="eyebrow">Metode și aparatură</p><h2>Ce folosim în terapie</h2></div>' +
-        '<ul class="method-chips">' + methods.map(function (m, i) {
-          return '<li style="--cat:' + MC.CATS[i % 4].color + '">' + m + '</li>';
-        }).join('') + '</ul>' +
+      '<section class="stats"><div class="wrap stats-in">' +
+        '<div><b>' + MC.SERVICES.length + '</b><span>servicii și pachete</span></div>' +
+        '<div><b>' + uniquePeople(MC.TEAM).length + '</b><span>specialiști în echipă</span></div>' +
+        '<div><b>' + C.specialties.length + '</b><span>specialități</span></div>' +
+        '<div><b>' + MC.hourLabel(s.open).slice(0, 2) + '–' + MC.hourLabel(s.close).slice(0, 2) + '</b><span>program zilnic</span></div>' +
       '</div></section>' +
 
       '<section class="sec"><div class="wrap">' +
-        '<div class="sec-head rv"><p class="eyebrow">Programare online</p><h2>Simplu, în 3 pași</h2></div>' +
-        '<ol class="steps-list">' +
-          '<li class="rv"><b>Alegi serviciul</b><span>Din lista de terapii și consultații, cu durata și prețul afișate.</span></li>' +
-          '<li class="rv"><b>Alegi ziua și ora</b><span>Vezi doar orele cu locuri libere, actualizate în timp real.</span></li>' +
-          '<li class="rv"><b>Primești confirmarea</b><span>Clinica verifică cererea și te contactează telefonic sau pe WhatsApp.</span></li>' +
-        '</ol>' +
-      '</div></section>' +
-
-      ctaBand();
+        '<div class="rv"><p class="eyebrow">Echipa de recuperare și neurofeedback</p><h2>Terapeuți dedicați fiecărui pacient</h2></div>' +
+        '<div class="mini-team">' + others.map(function (p) {
+          return '<a class="mini rv" href="#echipa">' + portrait(p, 'mini-img') +
+            '<span><b>' + MC.esc(p.name) + '</b>' + MC.esc(p.role) + '</span></a>';
+        }).join('') + '</div>' +
+        '<div class="start-card rv"><div><h2>Nu știi cu ce să începi?</h2>' +
+          '<p>Pacienții noi încep cu o evaluare. Medicul stabilește apoi terapia potrivită și numărul de ședințe.</p></div>' +
+          '<button class="btn sand big" data-action="new-patient">Programează o evaluare ' + MC.ICONS.arrow + '</button></div>' +
+      '</div></section>';
   }
 
   function ctaBand() {
@@ -523,12 +549,19 @@ window.MC = window.MC || {};
   /* ---------- evenimente ---------- */
 
   MC.siteActions = {
-    'quick-book': function (el) {
+    'qb-go': function () {
+      var q = MC.ui.qb;
+      if (!q || q.hour == null) return;
       resetBooking();
-      var svc = MC.serviceById(el.dataset.svc);
-      var d = MC.parseYmd(el.dataset.date);
-      Object.assign(MC.bk, { cat: svc.cat, serviceId: svc.id, date: el.dataset.date, hour: +el.dataset.hour, step: needsEval(svc) ? 1 : 2,
-        month: new Date(d.getFullYear(), d.getMonth(), 1) });
+      var svc = MC.serviceById(q.svc);
+      var d = MC.parseYmd(q.date);
+      Object.assign(MC.bk, { cat: svc.cat, serviceId: svc.id, date: q.date, hour: q.hour, forChild: q.who === 'child',
+        step: needsEval(svc) ? 1 : 3, month: new Date(d.getFullYear(), d.getMonth(), 1) });
+      MC.go('programare');
+    },
+    'new-patient': function () {
+      resetBooking();
+      MC.bk.newPatient = true;
       MC.go('programare');
     },
     'goto-cat': function (el, ev) { ev.preventDefault(); MC.ui.servicesCat = el.dataset.cat; MC.go('servicii'); },
@@ -583,6 +616,15 @@ window.MC = window.MC || {};
     return false;
   };
   MC.siteChange = function (el) {
+    if (el.dataset.change === 'qb') {
+      var q = MC.ui.qb;
+      var k = el.dataset.key;
+      q[k] = k === 'hour' ? +el.value : el.value;
+      document.getElementById('qb').innerHTML = quickBook();
+      var again = document.querySelector('#qb [data-key="' + k + '"]');
+      if (again) again.focus();
+      return true;
+    }
     if (el.dataset.change === 'bk-new') {
       var b = MC.bk;
       b.newPatient = el.checked;
@@ -602,7 +644,7 @@ window.MC = window.MC || {};
   /* ---------- Echipa ---------- */
 
   function initials(name) {
-    return name.replace(/^Dr\.\s*/, '').split(/[\s-]+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('');
+    return name.replace(/^Dr\.\s*/, '').split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('');
   }
   function portrait(p, cls) {
     return p.photo
@@ -633,21 +675,6 @@ window.MC = window.MC || {};
         '<p>Îmbinăm experiența profesională, metodele moderne de evaluare și recuperare și respectul față de fiecare persoană care ne trece pragul. ' +
         'Pentru noi, fiecare pacient este unic, iar sănătatea sa reprezintă prioritatea noastră.</p></div>' +
         '<div class="hero-cta"><a class="btn sand big" href="#programare">Programează-te online ' + MC.ICONS.arrow + '</a></div>' +
-      '</div></section>';
-  }
-
-  /* Secțiunea „Echipa” de pe prima pagină: medicii, cu link spre toată echipa. */
-  function teamPreview() {
-    var docs = MC.TEAM.filter(function (p) { return p.group === 'medici'; });
-    return '<section class="sec team-sec"><div class="wrap">' +
-      '<div class="sec-head rv"><p class="eyebrow">Echipa</p><h2>Medici și terapeuți dedicați</h2>' +
-        '<p class="muted">Medici specialiști, fizioterapeuți și asistenți medicali, într-o echipă multidisciplinară.</p></div>' +
-      '<div class="doc-cards">' + docs.map(function (p) {
-        return '<article class="doc rv">' + portrait(p, 'doc-photo') +
-          '<div><h3>' + MC.esc(p.name) + '</h3><p>' + MC.esc(p.role) + '</p>' +
-          '<button class="link-btn" data-action="book-svc" data-svc="' + p.book + '">Programează o consultație</button></div></article>';
-      }).join('') + '</div>' +
-      '<div class="center rv"><a class="btn ghost big" href="#echipa">Cunoaște toată echipa (' + MC.TEAM.map(function (p) { return p.name; }).filter(function (n, i, a) { return a.indexOf(n) === i; }).length + ') ' + MC.ICONS.arrow + '</a></div>' +
       '</div></section>';
   }
 
