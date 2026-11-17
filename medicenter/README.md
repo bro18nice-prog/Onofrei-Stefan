@@ -64,6 +64,12 @@ Administratorul deschide `…/agenda.html` → **Prima dată aici? Creează cont
 - **Plecarea unui coleg**: Setări → **Scoate accesul**. Accesul se oprește imediat, chiar dacă are încă parola.
 - Un cont creat cu un email care nu e în listă nu vede nimic.
 
+**Cont comun al clinicii.** Medicii pot folosi un singur cont (de ex. un Gmail al clinicii): se adaugă o singură dată în listă,
+cu „Administrator” nebifat, și toți intră în agendă cu același email și aceeași parolă. Proprietarul site-ului păstrează
+contul lui separat de administrator. Când pleacă cineva din clinică, se schimbă parola contului comun
+(Am uitat parola → link pe email), iar telefoanele celorlalți se reconectează cu parola nouă.
+În agendă nu se vede cine anume a confirmat o programare când toți folosesc același cont.
+
 Securitatea este verificată în baza de date (`supabase/schema.sql`), nu doar în site:
 pacienții văd doar câte locuri sunt ocupate (fără nume), programările noi trec prin verificarea locurilor libere,
 iar datele pacienților sunt vizibile doar personalului din listă, cu email confirmat.
@@ -100,7 +106,7 @@ Apare iconița **Agenda**, care se deschide direct în agendă, pe tot ecranul. 
 - **Pacient care a sunat:** se apasă pe o oră goală sau pe **+ Programare**.
 
 ### Setări (doar administratori)
-Capacitatea pe oră pentru fiecare secție, programul, zilele lucrătoare, cu câte zile înainte se pot face programări, lista personalului.
+Câte locuri are fiecare terapie la aceeași oră (inițial 7 la toate: medicul așază pacienții la confirmare), programul, zilele lucrătoare, cu câte zile înainte se pot face programări, lista personalului.
 
 ## De completat înainte de lansare
 - `js/data.js` → `company`: denumirea firmei și CUI (apar în politica de confidențialitate).

@@ -21,7 +21,7 @@ window.MC = window.MC || {};
 
   var DEFAULT_SETTINGS = {
     open: 9, close: 20, days: [1, 2, 3, 4, 5], maxDaysAhead: 60,
-    capacity: { kineto: 4, masaj: 2, fizio: 4, neuro: 1 },
+    capacity: { kineto: 7, masaj: 7, fizio: 7, neuro: 7 },
     serviceCapacity: MC.DEFAULT_SERVICE_CAP,
     evalRequired: MC.DEFAULT_EVAL,
     newPatient: MC.DEFAULT_NEW_PATIENT

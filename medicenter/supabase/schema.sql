@@ -331,18 +331,19 @@ end $$;
 
 insert into public.settings (id, data) values (1,
   '{"open": 9, "close": 20, "days": [1, 2, 3, 4, 5], "maxDaysAhead": 60,
-    "capacity": {"kineto": 4, "masaj": 2, "fizio": 4, "neuro": 1}}')
+    "capacity": {"kineto": 7, "masaj": 7, "fizio": 7, "neuro": 7}}')
 on conflict (id) do nothing;
 
 -- Locuri pe terapie și terapiile cu evaluare obligatorie (valori inițiale, se schimbă din agendă → Setări).
+-- Clinica a ales 7 locuri pe oră la fiecare terapie: medicul așază pacienții la confirmare.
 -- Se completează doar ce lipsește, fără să suprascrie ce a setat clinica.
 update public.settings set data = data
-  || case when data ? 'serviceCapacity' then '{}'::jsonb else jsonb_build_object('serviceCapacity', jsonb_build_object(
-       'k01', 1, 'k02', 4, 'k03', 1, 'k04', 1, 'k05', 1, 'k06', 1, 'k07', 1, 'k08', 1, 'k09', 1,
-       'k10', 1, 'k11', 4, 'k12', 1, 'k13', 4, 'k14', 4, 'k15', 1,
-       'm01', 1, 'm02', 1, 'm03', 1, 'm04', 1, 'm05', 1, 'm06', 1, 'm07', 1, 'm08', 1, 'm09', 1, 'm10', 1, 'm11', 2, 'm12', 1,
-       'f01', 2, 'f02', 2, 'f03', 2, 'f04', 2, 'f05', 1, 'f06', 1, 'f07', 2, 'f08', 1, 'f09', 1, 'f10', 1,
-       'n01', 1, 'n02', 1, 'n03', 1, 'n04', 1, 'n05', 1, 'n06', 1, 'n07', 1, 'n08', 1, 'n09', 1, 'n10', 1, 'n11', 1, 'n12', 1, 'n13', 1)) end
+  || case when data ? 'serviceCapacity' then '{}'::jsonb else jsonb_build_object('serviceCapacity', (
+       select jsonb_object_agg(id, 7) from unnest(array[
+         'k01','k02','k03','k04','k05','k06','k07','k08','k09','k10','k11','k12','k13','k14','k15',
+         'm01','m02','m03','m04','m05','m06','m07','m08','m09','m10','m11','m12',
+         'f01','f02','f03','f04','f05','f06','f07','f08','f09','f10',
+         'n01','n02','n03','n04','n05','n06','n07','n08','n09','n10','n11','n12','n13']) as id)) end
   || case when data ? 'evalRequired' then '{}'::jsonb else '{"evalRequired": {"k05": "k06", "k10": "k06"}}'::jsonb end
   || case when data ? 'newPatient' then '{}'::jsonb else '{"newPatient": ["k06", "n01", "n02", "n03"]}'::jsonb end
 where id = 1;
