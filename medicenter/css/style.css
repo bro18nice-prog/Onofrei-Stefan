@@ -435,6 +435,7 @@ a.tile:hover, button.tile:hover { border-color: var(--slate); transform: transla
 
 /* ---------- admin ---------- */
 .admin-login {
+  align-content: center; gap: 18px;
   min-height: 100vh; display: grid; place-items: center; padding: 24px var(--gutter-r) 24px var(--gutter-l);
   background: linear-gradient(140deg, var(--navy) 0%, var(--navy-2) 70%, #1b5a7d 100%); position: relative; overflow: hidden;
 }
@@ -728,3 +729,13 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .install-steps h3 { margin: 0 0 6px; }
 .install-steps ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
 @media (max-width: 640px) { .install-steps { grid-template-columns: minmax(0, 1fr); } }
+
+.big-steps { margin: 0; padding-left: 26px; display: grid; gap: 10px; font-size: 1.08rem; }
+.big-steps li::marker { font-weight: 800; color: var(--slate); }
+.big-install { font-size: 1.1rem; padding-block: 16px; }
+.center-text { text-align: center; }
+.qr-box { display: flex; gap: 18px; align-items: center; }
+.qr-box img { flex: none; border-radius: 12px; border: 1px solid var(--line); }
+.login-install { width: min(400px, 100%); position: relative; display: grid; gap: 12px; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .5); }
+.login-install h2 { font-size: 1.4rem; color: var(--navy); }
+@media (max-width: 520px) { .qr-box { flex-direction: column; text-align: center; } }

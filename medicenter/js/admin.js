@@ -80,10 +80,9 @@ window.MC = window.MC || {};
       '<p class="form-error" id="adm-error" role="alert" hidden></p>' +
       '<button class="btn primary block" type="submit">Intră în cont</button>' +
       (live
-        ? '<div class="login-links"><button type="button" class="link-btn" data-action="adm-auth" data-to="forgot">Am uitat parola</button>' +
-          '<button type="button" class="link-btn" data-action="adm-auth" data-to="signup">Prima dată aici? Creează cont</button></div>'
+        ? '<div class="login-links"><button type="button" class="link-btn" data-action="adm-auth" data-to="forgot">Am uitat parola</button></div>'
         : '<p class="demo-note">Versiune demo · parola este <b>medicenter</b></p>') +
-      foot;
+      '</form>' + (standalone() ? '' : '<div class="card login-install"><h2>Pune agenda pe telefon</h2>' + installHelp() + '</div>') + '</section>';
   }
 
   /* ---------- structură ---------- */
@@ -477,27 +476,41 @@ window.MC = window.MC || {};
   /* ---------- cont: parolă și instalare pe telefon ---------- */
 
   /* Chrome pe Android anunță că aplicația se poate instala; păstrăm evenimentul pentru butonul „Instalează”. */
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); MC.adm.installEvt = e; if (MC.adm.tab === 'cont') MC.render(); });
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); MC.adm.installEvt = e; if (MC.adm.tab === 'cont' || !MC.store.role()) MC.render(); });
   function standalone() {
     return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
   }
+  function device() {
+    var ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
+    if (/Android/i.test(ua)) return 'android';
+    return 'desktop';
+  }
+  /* Instrucțiuni de instalare, doar pentru telefonul folosit acum (pe calculator: codul QR). */
+  function installHelp() {
+    if (standalone()) return '<p class="info-box ok">Agenda este instalată pe acest telefon.</p>';
+    var d = device();
+    if (d === 'android') {
+      return (MC.adm.installEvt ? '<button class="btn primary block big-install" data-action="adm-install">📲 Instalează agenda pe telefon</button>' +
+          '<p class="muted small center-text">Apasă butonul, apoi „Instalează”. Gata.</p>' : '') +
+        '<ol class="big-steps">' + (MC.adm.installEvt ? '<li class="muted small">Dacă butonul nu apare:</li>' : '') +
+          '<li>Apasă <b>⋮</b> (cele 3 puncte, sus în dreapta)</li>' +
+          '<li>Apasă <b>Instalează aplicația</b> sau <b>Adaugă pe ecranul de pornire</b></li></ol>';
+    }
+    if (d === 'ios') {
+      return '<ol class="big-steps">' +
+        '<li>Deschide pagina în <b>Safari</b> (busola albastră)</li>' +
+        '<li>Apasă <b>Partajează</b>: pătratul cu săgeată în sus, jos pe ecran</li>' +
+        '<li>Derulează și apasă <b>Adaugă pe ecranul principal</b>, apoi <b>Adaugă</b></li></ol>';
+    }
+    return '<div class="qr-box"><img src="img/qr-agenda.png" alt="Cod QR pentru agenda Medicenter" width="180" height="180">' +
+      '<p>Scanează codul cu <b>camera telefonului</b>. Se deschide agenda, iar pe telefon apar pașii de instalare.</p></div>';
+  }
   function account() {
-    var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    var installed = standalone();
     return shell('<div class="adm-settings wrap">' +
       '<div class="card form install-card">' +
-        '<h1 class="adm-title">Agenda pe telefon</h1>' +
-        (installed ? '<p class="info-box ok">Agenda este deja instalată pe acest telefon.</p>' :
-          (MC.adm.installEvt ? '<button class="btn primary" data-action="adm-install">Instalează agenda pe acest telefon</button>' : '')) +
-        '<div class="install-steps">' +
-          '<section' + (ios ? ' class="here"' : '') + '><h3>iPhone (Safari)</h3><ol>' +
-            '<li>Deschide agenda în <b>Safari</b>.</li><li>Apasă butonul <b>Partajează</b> (pătratul cu săgeată în sus).</li>' +
-            '<li>Alege <b>Adaugă pe ecranul principal</b> (Add to Home Screen), apoi <b>Adaugă</b>.</li></ol></section>' +
-          '<section' + (!ios ? ' class="here"' : '') + '><h3>Android (Chrome)</h3><ol>' +
-            '<li>Deschide agenda în <b>Chrome</b>.</li><li>Apasă meniul <b>⋮</b> din dreapta sus.</li>' +
-            '<li>Alege <b>Instalează aplicația</b> sau <b>Adaugă pe ecranul de pornire</b>.</li></ol></section>' +
-        '</div>' +
-        '<p class="muted small">Pe ecran apare iconița <b>Agenda</b>. Se deschide ca o aplicație, fără bara browserului, și rămâi conectat.</p>' +
+        '<h1 class="adm-title">Agenda pe telefon</h1>' + installHelp() +
+        '<p class="muted small">Pe ecran apare iconița <b>Agenda</b>. Se deschide ca o aplicație și rămâi conectat.</p>' +
       '</div>' +
       '<form class="card form" id="adm-pass-form" novalidate>' +
         '<h3>Schimbă parola</h3>' +
