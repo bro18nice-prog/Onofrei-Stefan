@@ -102,21 +102,32 @@ window.MC = window.MC || {};
     return list.filter(function (p, i) { return list.findIndex(function (x) { return x.name === p.name; }) === i; });
   }
 
-  /* EEG și neurofeedback: fotografie din cabinet + investigațiile cu preț și programare directă. */
+  /* Secțiune cu fotografii din cabinet + servicii cu preț și programare directă (EEG, neurofeedback). */
+  function photoServices(o) {
+    var photos = '<div class="eeg-photos' + (o.inset ? '' : ' single') + ' rv"><figure class="feature eeg-photo"><img src="' + o.photo.src + '" alt="' + o.photo.alt + '" loading="lazy" width="900" height="1200"></figure>' +
+      (o.inset ? '<figure class="eeg-inset"><img src="' + o.inset.src + '" alt="' + o.inset.alt + '" loading="lazy" width="900" height="1200"></figure>' : '') + '</div>';
+    var text = '<div class="rv"><p class="eyebrow">' + o.eyebrow + '</p><h2>' + o.title + '</h2>' +
+      '<p class="muted eeg-lead">' + o.lead + '</p>' +
+      '<ul class="eeg-list">' + o.items.map(MC.serviceById).filter(Boolean).map(function (x) {
+        return '<li><span><b>' + MC.esc(x.name) + '</b>' + (x.durLabel ? '<small>' + x.durLabel + '</small>' : '') + '</span>' +
+          '<em>' + x.price + '</em><button class="btn soft small" data-action="book-svc" data-svc="' + x.id + '">Programează</button></li>';
+      }).join('') + '</ul>' +
+      '<button class="link-btn" data-action="goto-cat" data-cat="neuro">' + o.link + ' ' + MC.ICONS.arrow + '</button></div>';
+    return '<section class="sec"><div class="wrap split' + (o.photoFirst ? ' split-rev' : ' split-fwd') + '">' +
+      (o.photoFirst ? photos + text : text + photos) + '</div></section>';
+  }
   function eegSection() {
-    var ph = MC.photo('eeg'), ph2 = MC.photo('neurofeedback');
-    var items = ['n12', 'n13', 'n05', 'n06'].map(MC.serviceById).filter(Boolean);
-    return '<section class="sec"><div class="wrap split split-rev">' +
-      '<div class="eeg-photos rv"><figure class="feature eeg-photo"><img src="' + ph.src + '" alt="' + ph.alt + '" loading="lazy" width="900" height="1200"></figure>' +
-        (ph2 ? '<figure class="eeg-inset"><img src="' + ph2.src + '" alt="' + ph2.alt + '" loading="lazy" width="900" height="1200"></figure>' : '') + '</div>' +
-      '<div class="rv"><p class="eyebrow">Neurologie pediatrică · investigații</p><h2>EEG și neurofeedback, în clinică</h2>' +
-        '<p class="muted eeg-lead">EEG standard și prelungit, Brainmap și ședințe de neurofeedback, făcute de asistente pregătite în electroencefalografie și neurofeedback, în colaborare cu medicii clinicii.</p>' +
-        '<ul class="eeg-list">' + items.map(function (x) {
-          return '<li><span><b>' + MC.esc(x.name) + '</b>' + (x.durLabel ? '<small>' + x.durLabel + '</small>' : '') + '</span>' +
-            '<em>' + x.price + '</em><button class="btn soft small" data-action="book-svc" data-svc="' + x.id + '">Programează</button></li>';
-        }).join('') + '</ul>' +
-        '<button class="link-btn" data-action="goto-cat" data-cat="neuro">Toate serviciile de neurologie și neurofeedback ' + MC.ICONS.arrow + '</button>' +
-      '</div></div></section>';
+    var eeg = MC.photosByTag('eeg');
+    return photoServices({ photoFirst: true, photo: eeg[0], inset: eeg[1],
+      eyebrow: 'Neurologie pediatrică · investigații', title: 'EEG în clinică',
+      lead: 'Electroencefalograma (EEG) standard și prelungită se face în clinică, de asistente pregătite în electroencefalografie, în colaborare cu medicii clinicii.',
+      items: ['n12', 'n13'], link: 'Toate consultațiile și investigațiile' });
+  }
+  function neurofeedbackSection() {
+    return photoServices({ photoFirst: false, photo: MC.photo('neurofeedback'),
+      eyebrow: 'Neurofeedback', title: 'Brainmap și antrenament neuronal',
+      lead: 'Brainmap (scanarea activității cerebrale) și ședințe de neurofeedback pentru copii și adulți, cu terapeuți cu certificări internaționale în Neurofeedback și BrainMap. Ședințele se pot face și în pachete de 10 sau 20.',
+      items: ['n05', 'n06', 'n07'], link: 'Vezi și pachetele de neurofeedback' });
   }
 
   function home() {
@@ -135,7 +146,6 @@ window.MC = window.MC || {};
       '<section class="hero">' +
         '<img class="hero-img" src="img/hero.jpg" alt="Recepția Medicenter Clinic" width="1774" height="887" fetchpriority="high">' +
         '<div class="wrap hero-in"><div class="hero-text anim">' +
-          '<p class="slogan">' + C.tagline + '</p>' +
           '<h1>Clinica ta de recuperare și sănătate mintală.</h1>' +
           '<p class="lead">Psihiatrie, neurologie pediatrică, recuperare medicală și neurofeedback, pentru copii și adulți, în centrul Sucevei.</p>' +
           '<div class="hero-cta">' +
@@ -176,6 +186,7 @@ window.MC = window.MC || {};
       '</div></section>' +
 
       eegSection() +
+      neurofeedbackSection() +
 
       '<section class="stats"><div class="wrap stats-in">' +
         '<div><b>' + MC.SERVICES.length + '</b><span>servicii și pachete</span></div>' +
