@@ -104,10 +104,11 @@ window.MC = window.MC || {};
 
   /* EEG și neurofeedback: fotografie din cabinet + investigațiile cu preț și programare directă. */
   function eegSection() {
-    var ph = MC.photo('eeg');
+    var phs = MC.photosByTag('eeg'), ph = phs[0], ph2 = phs[1];
     var items = ['n12', 'n13', 'n05'].map(MC.serviceById).filter(Boolean);
     return '<section class="sec"><div class="wrap split split-rev">' +
-      '<figure class="feature eeg-photo rv"><img src="' + ph.src + '" alt="' + ph.alt + '" loading="lazy" width="900" height="1200"></figure>' +
+      '<div class="eeg-photos rv"><figure class="feature eeg-photo"><img src="' + ph.src + '" alt="' + ph.alt + '" loading="lazy" width="900" height="1200"></figure>' +
+        (ph2 ? '<figure class="eeg-inset"><img src="' + ph2.src + '" alt="' + ph2.alt + '" loading="lazy" width="900" height="1200"></figure>' : '') + '</div>' +
       '<div class="rv"><p class="eyebrow">Neurologie pediatrică · investigații</p><h2>EEG și neurofeedback, în clinică</h2>' +
         '<p class="muted eeg-lead">EEG standard și prelungit, Brainmap și ședințe de neurofeedback, făcute de asistente pregătite în electroencefalografie și neurofeedback, în colaborare cu medicii clinicii.</p>' +
         '<ul class="eeg-list">' + items.map(function (x) {

@@ -137,9 +137,11 @@ MC.slotHours = function (service) {
 MC.PHOTOS = [
   { src: 'img/hero.jpg', alt: 'Recepția Medicenter Clinic', tag: 'receptie' },
   { src: 'img/clinica.jpg', alt: 'Terapeută Medicenter lângă aparatura de recuperare', tag: 'recuperare' },
-  { src: 'img/clinica/eeg.jpg', alt: 'Înregistrare EEG în cabinetul Medicenter Clinic', tag: 'eeg' }
+  { src: 'img/clinica/eeg.jpg', alt: 'Înregistrare EEG în cabinetul Medicenter Clinic', tag: 'eeg' },
+  { src: 'img/clinica/eeg-2.jpg', alt: 'Pregătirea căștii EEG în cabinetul Medicenter Clinic', tag: 'eeg' }
 ];
 MC.photo = function (tag) { return MC.PHOTOS.find(function (p) { return p.tag === tag; }); };
+MC.photosByTag = function (tag) { return MC.PHOTOS.filter(function (p) { return p.tag === tag; }); };
 
 MC.TEAM_GROUPS = [
   { id: 'medici', name: 'Echipa medicală' },
