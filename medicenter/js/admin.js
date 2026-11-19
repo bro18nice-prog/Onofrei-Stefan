@@ -42,6 +42,13 @@ window.MC = window.MC || {};
 
   /* ---------- autentificare ---------- */
 
+  /* Emailul se completează singur: din linkul trimis medicilor (?email=…) sau ultimul folosit pe acest telefon. */
+  function knownEmail() {
+    var m = /[?&]email=([^&#]+)/.exec(location.search);
+    if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return ''; } }
+    try { return localStorage.getItem('medicenter-email') || ''; } catch (e) { return ''; }
+  }
+
   function login() {
     var live = MC.store.live;
     var a = MC.adm.auth;
@@ -75,7 +82,7 @@ window.MC = window.MC || {};
         '<button type="button" class="link-btn" data-action="adm-auth" data-to="login">Am deja cont</button>' + foot;
     }
     return head + '<h1>Agenda clinicii</h1><p class="muted">Acces doar pentru personalul clinicii.</p>' +
-      (live ? '<label for="adm-email">Email</label><input id="adm-email" type="email" autocomplete="email" required>' : '') +
+      (live ? '<label for="adm-email">Email</label><input id="adm-email" type="email" autocomplete="email" required value="' + MC.esc(knownEmail()) + '">' : '') +
       '<label for="adm-pass">Parolă</label><input id="adm-pass" type="password" autocomplete="current-password" required>' +
       '<p class="form-error" id="adm-error" role="alert" hidden></p>' +
       '<button class="btn primary block" type="submit">Intră în cont</button>' +
@@ -102,7 +109,26 @@ window.MC = window.MC || {};
           (MC.store.email() ? '<span class="who">' + MC.esc(MC.store.email()) + '</span>' : '') +
           '<a class="btn ghost small" href="#acasa">Vezi site-ul</a>' +
           '<button class="btn ghost small" data-action="adm-logout">Ieși</button></div>' +
-      '</div></header>' + inner + '</div>';
+      '</div></header>' + inner + installBanner() + '</div>';
+  }
+
+  var SHARE_ICON = '<svg class="share-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+  /* Bara de jos care îi arată medicului, pe telefonul lui, cum pune agenda pe ecran. */
+  function installBanner() {
+    var d = device();
+    var off = false;
+    try { off = localStorage.getItem('medicenter-banner-off') === '1'; } catch (e) { /* opțional */ }
+    if (d === 'desktop' || standalone() || off || MC.adm.tab === 'cont') return '';
+    var body;
+    if (d === 'android') {
+      body = MC.adm.installEvt
+        ? '<span class="ib-text"><b>Pune agenda pe ecranul telefonului</b></span><button class="btn sand small" data-action="adm-install">📲 Instalează</button>'
+        : '<span class="ib-text"><b>Pune agenda pe ecran:</b> apasă <b>⋮</b> (sus, dreapta), apoi <b>Instalează aplicația</b>.</span>';
+    } else {
+      body = '<span class="ib-text"><b>Pune agenda pe ecran:</b> apasă ' + SHARE_ICON + ' <b>Partajează</b> (lângă adresa site-ului; dacă nu îl vezi, întâi <b>⋯</b>), apoi <b>Adaugă pe ecranul principal</b>.</span>';
+    }
+    return '<div class="install-banner" role="note">' + body +
+      '<button class="ib-close" data-action="adm-banner-off" aria-label="Închide">×</button></div>';
   }
 
   /* ---------- agenda ---------- */
@@ -476,7 +502,7 @@ window.MC = window.MC || {};
   /* ---------- cont: parolă și instalare pe telefon ---------- */
 
   /* Chrome pe Android anunță că aplicația se poate instala; păstrăm evenimentul pentru butonul „Instalează”. */
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); MC.adm.installEvt = e; if (MC.adm.tab === 'cont' || !MC.store.role()) MC.render(); });
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); MC.adm.installEvt = e; if (document.body.classList.contains('is-admin')) MC.render(); });
   function standalone() {
     return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
   }
@@ -504,7 +530,7 @@ window.MC = window.MC || {};
           MC.esc(location.origin + location.pathname) + '</b></p>' : '') +
         '<ol class="big-steps">' +
         '<li>Deschide pagina în <b>Safari</b> (busola albastră)</li>' +
-        '<li>Apasă <b>Partajează</b>: pătratul cu săgeată în sus, jos pe ecran. Dacă nu îl vezi, apasă întâi <b>⋯</b> (dreapta jos, lângă adresă)</li>' +
+        '<li>Apasă ' + SHARE_ICON + ' <b>Partajează</b>: pătratul cu săgeată, lângă adresa site-ului (sus sau jos). Dacă nu îl vezi, apasă întâi <b>⋯</b></li>' +
         '<li>Derulează lista și apasă <b>Adaugă pe ecranul principal</b></li>' +
         '<li>Apasă <b>Adaugă</b> (sus, în dreapta)</li></ol>';
     }
@@ -563,6 +589,10 @@ window.MC = window.MC || {};
 
   MC.adminActions = {
     'adm-tab': function (el) { MC.adm.tab = el.dataset.tab; MC.adm.confirm = null; MC.render(); },
+    'adm-banner-off': function () {
+      try { localStorage.setItem('medicenter-banner-off', '1'); } catch (e) { /* opțional */ }
+      MC.render();
+    },
     'adm-install': function () {
       var e = MC.adm.installEvt;
       if (!e) return;
@@ -670,7 +700,10 @@ window.MC = window.MC || {};
           MC.render();
         }, function () {});
       } else {
-        run(MC.store.signIn(email, pass), null, 'adm-error').then(MC.render, function () {});
+        run(MC.store.signIn(email, pass), null, 'adm-error').then(function () {
+          try { localStorage.setItem('medicenter-email', email.trim()); } catch (e) { /* opțional */ }
+          MC.render();
+        }, function () {});
       }
       return true;
     }

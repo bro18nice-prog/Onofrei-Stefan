@@ -740,3 +740,14 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .login-install { width: min(400px, 100%); position: relative; display: grid; gap: 12px; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .5); }
 .login-install h2 { font-size: 1.4rem; color: var(--navy); }
 @media (max-width: 520px) { .qr-box { flex-direction: column; text-align: center; } }
+
+.share-ico { width: 1.15em; height: 1.15em; vertical-align: -0.2em; color: #0a84ff; }
+.install-banner {
+  position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px 44px 14px 16px; border-radius: 16px;
+  background: var(--navy); color: #fff; font-size: 0.95rem; line-height: 1.4; box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .55);
+}
+.install-banner .share-ico { color: #7cc0ff; }
+.ib-close { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; font-size: 1.3rem; cursor: pointer; }
+.admin:has(.install-banner) { padding-bottom: 120px; }
+.ib-text { flex: 1 1 220px; }

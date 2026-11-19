@@ -95,6 +95,8 @@ iar datele pacienților sunt vizibile doar personalului din listă, cu email con
 Pe site, jos: **Acces personal** (adresa `…/agenda.html`) → email + parolă → **Intră în cont**.
 
 ### Agenda ca aplicație pe telefon (o singură dată pe fiecare telefon)
+Cel mai simplu: se trimite medicilor pe WhatsApp linkul `…/agenda.html?email=EMAILUL_CONTULUI` (emailul se completează singur;
+doar parola se scrie). După intrare, pe telefon apare jos o bară care arată exact ce trebuie apăsat (pe Android, butonul **Instalează**).
 Instrucțiunile sunt și în agendă, la **Cont și telefon** (pe Android apare direct butonul **Instalează agenda pe acest telefon**).
 - **Android (Chrome):** se deschide `…/agenda.html` → meniul ⋮ → **Instalează aplicația** (sau **Adaugă pe ecranul de pornire**).
 - **iPhone (Safari):** se deschide `…/agenda.html` în Safari → **Partajează** (pătratul cu săgeată; pe iOS 26 întâi **⋯** dreapta jos) → **Adaugă pe ecranul principal** → **Adaugă**. Pe iPhone nu există buton de instalare automată.
