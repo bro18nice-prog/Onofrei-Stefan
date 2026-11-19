@@ -498,10 +498,15 @@ window.MC = window.MC || {};
           '<li>Apasă <b>Instalează aplicația</b> sau <b>Adaugă pe ecranul de pornire</b></li></ol>';
     }
     if (d === 'ios') {
-      return '<ol class="big-steps">' +
+      var other = /CriOS|FxiOS|EdgiOS|GSA|FBAN|FBAV|Instagram/.test(navigator.userAgent);
+      return '<p class="info-box">Pe iPhone nu există buton de descărcare: Apple permite doar „Adaugă pe ecranul principal”, din Safari.</p>' +
+        (other ? '<p class="info-box warn">Ai deschis pagina în alt browser. Copiază adresa de mai jos și deschide-o în <b>Safari</b>:<br><b>' +
+          MC.esc(location.origin + location.pathname) + '</b></p>' : '') +
+        '<ol class="big-steps">' +
         '<li>Deschide pagina în <b>Safari</b> (busola albastră)</li>' +
-        '<li>Apasă <b>Partajează</b>: pătratul cu săgeată în sus, jos pe ecran</li>' +
-        '<li>Derulează și apasă <b>Adaugă pe ecranul principal</b>, apoi <b>Adaugă</b></li></ol>';
+        '<li>Apasă <b>Partajează</b>: pătratul cu săgeată în sus, jos pe ecran. Dacă nu îl vezi, apasă întâi <b>⋯</b> (dreapta jos, lângă adresă)</li>' +
+        '<li>Derulează lista și apasă <b>Adaugă pe ecranul principal</b></li>' +
+        '<li>Apasă <b>Adaugă</b> (sus, în dreapta)</li></ol>';
     }
     return '<div class="qr-box"><img src="img/qr-agenda.png" alt="Cod QR pentru agenda Medicenter" width="180" height="180">' +
       '<p>Scanează codul cu <b>camera telefonului</b>. Se deschide agenda, iar pe telefon apar pașii de instalare.</p></div>';

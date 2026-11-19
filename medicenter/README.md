@@ -97,7 +97,7 @@ Pe site, jos: **Acces personal** (adresa `…/agenda.html`) → email + parolă 
 ### Agenda ca aplicație pe telefon (o singură dată pe fiecare telefon)
 Instrucțiunile sunt și în agendă, la **Cont și telefon** (pe Android apare direct butonul **Instalează agenda pe acest telefon**).
 - **Android (Chrome):** se deschide `…/agenda.html` → meniul ⋮ → **Instalează aplicația** (sau **Adaugă pe ecranul de pornire**).
-- **iPhone (Safari):** se deschide `…/agenda.html` → **Partajează** (pătratul cu săgeată) → **Adaugă pe ecranul principal**.
+- **iPhone (Safari):** se deschide `…/agenda.html` în Safari → **Partajează** (pătratul cu săgeată; pe iOS 26 întâi **⋯** dreapta jos) → **Adaugă pe ecranul principal** → **Adaugă**. Pe iPhone nu există buton de instalare automată.
 
 Apare iconița **Agenda**, care se deschide direct în agendă, pe tot ecranul. Agenda se actualizează singură la fiecare minut.
 

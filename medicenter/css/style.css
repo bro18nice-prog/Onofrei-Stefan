@@ -611,6 +611,7 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .choice.on svg { color: var(--ok); }
 .info-box { background: var(--slate-soft); color: var(--slate-deep); padding: 10px 14px; border-radius: 12px; font-size: 0.92rem; margin-bottom: 6px; }
 .info-box.ok { background: var(--ok-soft); color: var(--ok); }
+.info-box.warn { background: var(--warn-soft); color: var(--warn); }
 .form fieldset { border: 0; padding: 0; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .form legend { font-size: 0.875rem; color: var(--muted); font-weight: 600; margin-bottom: 6px; padding: 0; }
 .pill { position: relative; margin: 0 !important; }
