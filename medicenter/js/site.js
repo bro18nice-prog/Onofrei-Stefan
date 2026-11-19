@@ -104,8 +104,8 @@ window.MC = window.MC || {};
 
   /* EEG și neurofeedback: fotografie din cabinet + investigațiile cu preț și programare directă. */
   function eegSection() {
-    var phs = MC.photosByTag('eeg'), ph = phs[0], ph2 = phs[1];
-    var items = ['n12', 'n13', 'n05'].map(MC.serviceById).filter(Boolean);
+    var ph = MC.photo('eeg'), ph2 = MC.photo('neurofeedback');
+    var items = ['n12', 'n13', 'n05', 'n06'].map(MC.serviceById).filter(Boolean);
     return '<section class="sec"><div class="wrap split split-rev">' +
       '<div class="eeg-photos rv"><figure class="feature eeg-photo"><img src="' + ph.src + '" alt="' + ph.alt + '" loading="lazy" width="900" height="1200"></figure>' +
         (ph2 ? '<figure class="eeg-inset"><img src="' + ph2.src + '" alt="' + ph2.alt + '" loading="lazy" width="900" height="1200"></figure>' : '') + '</div>' +
@@ -161,7 +161,7 @@ window.MC = window.MC || {};
             return '<li><button data-action="' + x[2] + '" ' + attr + '><b>0' + (i + 1) + '</b>' +
               '<span><strong>' + x[0] + '</strong><small>' + x[1] + '</small></span>' + MC.ICONS.arrow + '</button></li>';
           }).join('') + '</ol></div>' +
-        '<figure class="feature rv"><img src="' + MC.photo('recuperare').src + '" alt="' + MC.photo('recuperare').alt + '" loading="lazy" width="800" height="1067">' +
+        '<figure class="feature rv"><img src="' + MC.photo('recuperare').src + '" alt="' + MC.photo('recuperare').alt + '" loading="lazy" width="900" height="1200">' +
           '<figcaption><b>Metode moderne de recuperare</b><span>Aparatură și tehnici folosite în clinică</span>' +
           '<ul>' + methods.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul></figcaption></figure>' +
       '</div></section>' +

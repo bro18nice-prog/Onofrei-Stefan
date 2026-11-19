@@ -136,8 +136,10 @@ MC.slotHours = function (service) {
    tot de aici se va construi mai târziu galeria foto (adaugi un rând pentru fiecare poză nouă din img/clinica/). */
 MC.PHOTOS = [
   { src: 'img/hero.jpg', alt: 'Recepția Medicenter Clinic', tag: 'receptie' },
-  { src: 'img/clinica.jpg', alt: 'Terapeută Medicenter lângă aparatura de recuperare', tag: 'recuperare' },
+  { src: 'img/clinica/sala-kineto.jpg', alt: 'Sala de kinetoterapie Medicenter Clinic', tag: 'recuperare' },
+  { src: 'img/clinica.jpg', alt: 'Terapeută Medicenter lângă aparatura de recuperare', tag: 'recuperare-aparat' },
   { src: 'img/clinica/eeg.jpg', alt: 'Înregistrare EEG în cabinetul Medicenter Clinic', tag: 'eeg' },
+  { src: 'img/clinica/neurofeedback.jpg', alt: 'Ședință de neurofeedback pentru un copil, la Medicenter Clinic', tag: 'neurofeedback' },
   { src: 'img/clinica/eeg-2.jpg', alt: 'Pregătirea căștii EEG în cabinetul Medicenter Clinic', tag: 'eeg' }
 ];
 MC.photo = function (tag) { return MC.PHOTOS.find(function (p) { return p.tag === tag; }); };
