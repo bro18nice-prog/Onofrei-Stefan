@@ -106,17 +106,17 @@ window.MC = window.MC || {};
     var docs = MC.TEAM.filter(function (p) { return p.group === 'medici'; });
     var others = uniquePeople(MC.TEAM.filter(function (p) { return p.group !== 'medici'; }));
     var spec = [
-      ['Psihiatrie', 'Evaluare și tratament pentru adulți', 'book-svc', 'n03'],
-      ['Psihiatrie pediatrică', 'Copii și adolescenți, în colaborare cu familia', 'book-svc', 'n02'],
-      ['Neurologie pediatrică', 'Afecțiuni neurologice și de neurodezvoltare', 'book-svc', 'n01'],
-      ['Recuperare medicală', 'Kinetoterapie, Schroth, RPG, masaj și fizioterapie', 'goto-cat', 'kineto'],
-      ['Neurofeedback', 'EEG, Brainmap și antrenament neuronal', 'goto-cat', 'neuro']
+      ['Neurologie pediatrică', 'Consultație, control, EEG', 'book-svc', 'n01'],
+      ['Psihiatrie pediatrică', 'Consultație, control', 'book-svc', 'n02'],
+      ['Psihiatrie', 'Consultație, control', 'book-svc', 'n03'],
+      ['Recuperare medicală', 'Kinetoterapie, Schroth, reeducare posturală globală, masaj și fizioterapie', 'goto-cat', 'kineto'],
+      ['Neurofeedback', 'Brainmap (scanare), ședințe și pachete', 'goto-cat', 'neuro']
     ];
-    var methods = ['Schroth', 'RPG', 'Tecar', 'Deep Oscillation', 'Neurofeedback', 'EEG', 'Kinesio taping', 'Drenaj limfatic'];
+    var methods = ['Schroth', 'Reeducare posturală globală', 'Tecar', 'Deep Oscillation', 'Neurofeedback', 'EEG', 'Kinesio taping', 'Drenaj limfatic'];
     var s = MC.store.settings();
     return '' +
       '<section class="hero">' +
-        '<img class="hero-img" src="img/hero.jpg" alt="" width="900" height="1530" fetchpriority="high">' +
+        '<img class="hero-img" src="img/hero.jpg" alt="Recepția Medicenter Clinic" width="1774" height="887" fetchpriority="high">' +
         '<div class="wrap hero-in"><div class="hero-text anim">' +
           '<p class="slogan">' + C.tagline + '</p>' +
           '<h1>Clinica ta de recuperare și sănătate mintală.</h1>' +

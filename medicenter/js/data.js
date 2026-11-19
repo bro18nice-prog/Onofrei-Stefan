@@ -18,13 +18,13 @@ MC.CLINIC = {
 /* Secțiile clinicii. Capacitatea (pacienți pe oră) se setează din admin. */
 MC.CATS = [
   { id: 'kineto', name: 'Kinetoterapie și recuperare', short: 'Kinetoterapie', color: '#3a7cb8', icon: 'kineto',
-    blurb: 'Kinetoterapie individuală și de grup, recuperare neurologică, RPG, Schroth, ATM.' },
+    blurb: 'Kinetoterapie individuală și de grup, recuperare neurologică, reeducare posturală globală, Schroth, ATM, planșeu pelvin.' },
   { id: 'masaj', name: 'Masaj și drenaj limfatic', short: 'Masaj', color: '#c0784e', icon: 'masaj',
     blurb: 'Masaj terapeutic, reflexogen, prenatal, pentru bebeluși și drenaj limfatic.' },
   { id: 'fizio', name: 'Fizioterapie', short: 'Fizioterapie', color: '#22978a', icon: 'fizio',
     blurb: 'Curenți, laser, magnetoterapie, ultrasunete, Tecar și Deep Oscillation.' },
   { id: 'neuro', name: 'Neurologie și psihiatrie', short: 'Neuro', color: '#8761b5', icon: 'neuro',
-    blurb: 'Consultații, EEG, Brainmap și antrenament neuronal (neurofeedback).' }
+    blurb: 'Consultații și control, EEG, Brainmap și antrenament neuronal (neurofeedback).' }
 ];
 
 /* Iconițe desenate simplu (SVG), folosite pe carduri și în meniuri. */
@@ -50,13 +50,14 @@ MC.SERVICES = [
   { id: 'k01', cat: 'kineto', name: 'Kinetoterapie individuală', dur: 50, durLabel: '50 min', price: '170 lei' },
   { id: 'k02', cat: 'kineto', name: 'Kinetoterapie de grup', dur: 50, durLabel: '50 min', price: '140 lei / ședință' },
   { id: 'k03', cat: 'kineto', name: 'Kinetoterapie pentru afecțiuni neurologice', dur: 90, durLabel: '90 min', price: '230 lei' },
-  { id: 'k04', cat: 'kineto', name: 'RPG – reeducare posturală globală', dur: 50, durLabel: '50 min', price: '150 lei' },
+  { id: 'k04', cat: 'kineto', name: 'Reeducare posturală globală (RPG)', dur: 50, durLabel: '50 min', price: '150 lei' },
   { id: 'k05', cat: 'kineto', name: 'Terapia Schroth', dur: 50, durLabel: '50 min', price: '150 lei' },
   { id: 'k06', cat: 'kineto', name: 'Evaluare posturală / Schroth', dur: 45, durLabel: '45 min', price: '200 lei' },
   { id: 'k07', cat: 'kineto', name: 'Recuperare articulație temporo-mandibulară (ATM)', dur: 50, durLabel: '45–50 min', price: '150 lei' },
   { id: 'k08', cat: 'kineto', name: 'Kinesio taping (local / regional)', dur: 30, durLabel: '', price: '20 – 150 lei' },
   { id: 'k09', cat: 'kineto', name: 'Bandaj compresiv multistrat pentru limfedem', dur: 45, durLabel: '', price: 'membru superior 100 lei · membru inferior 140 lei' },
-  { id: 'k10', cat: 'kineto', pkg: true, name: 'Pachet RPG / Schroth – 10 ședințe', dur: 50, durLabel: '50 min / ședință', price: '1300 lei' },
+  { id: 'k16', cat: 'kineto', name: 'Recuperarea planșeului pelvin / diastazei abdominale', dur: 50, durLabel: '', price: '170 lei / ședință' },
+  { id: 'k10', cat: 'kineto', pkg: true, name: 'Pachet reeducare posturală globală (RPG) / Schroth – 10 ședințe', dur: 50, durLabel: '50 min / ședință', price: '1300 lei' },
   { id: 'k11', cat: 'kineto', pkg: true, name: 'Pachet kinetoterapie de grup – 10 ședințe', dur: 50, durLabel: '50 min / ședință', price: '1260 lei' },
   { id: 'k12', cat: 'kineto', pkg: true, name: 'Pachet kinetoterapie bebeluși – 10 ședințe', dur: 50, durLabel: '45–50 min / ședință', price: '1530 lei' },
   { id: 'k13', cat: 'kineto', pkg: true, name: 'Pachet gimnastică prenatală – 10 ședințe', dur: 50, durLabel: '', price: '1300 lei' },
@@ -94,15 +95,15 @@ MC.SERVICES = [
   { id: 'n02', cat: 'neuro', name: 'Consultație psihiatrie pediatrică', dur: 60, durLabel: '', price: '300 lei' },
   { id: 'n03', cat: 'neuro', name: 'Consultație psihiatrie', dur: 60, durLabel: '', price: '300 lei' },
   { id: 'n04', cat: 'neuro', name: 'Control', dur: 30, durLabel: '', price: '150 lei' },
+  { id: 'n12', cat: 'neuro', name: 'EEG (electroencefalogramă)', dur: 60, durLabel: '45–60 min', price: '500 lei' },
+  { id: 'n13', cat: 'neuro', name: 'EEG (electroencefalogramă) prelungit', dur: 120, durLabel: '120 min', price: '700 lei' },
   { id: 'n05', cat: 'neuro', name: 'Brainmap (scanare) cu interpretare', dur: 60, durLabel: '', price: '1000 lei' },
   { id: 'n06', cat: 'neuro', name: 'Antrenament neuronal (neurofeedback)', dur: 30, durLabel: '30 min', price: '350 lei' },
   { id: 'n07', cat: 'neuro', name: 'Antrenament neuronal (neurofeedback)', dur: 45, durLabel: '45 min', price: '450 lei' },
   { id: 'n08', cat: 'neuro', pkg: true, name: 'Pachet neurofeedback – 10 ședințe', dur: 30, durLabel: '30 min / ședință', price: '3150 lei' },
   { id: 'n09', cat: 'neuro', pkg: true, name: 'Pachet neurofeedback – 20 ședințe', dur: 30, durLabel: '30 min / ședință', price: '5250 lei' },
   { id: 'n10', cat: 'neuro', pkg: true, name: 'Pachet neurofeedback – 10 ședințe', dur: 45, durLabel: '45 min / ședință', price: '4050 lei' },
-  { id: 'n11', cat: 'neuro', pkg: true, name: 'Pachet neurofeedback – 20 ședințe', dur: 45, durLabel: '45 min / ședință', price: '6750 lei' },
-  { id: 'n12', cat: 'neuro', name: 'EEG (electroencefalogramă)', dur: 60, durLabel: '45–60 min', price: '500 lei' },
-  { id: 'n13', cat: 'neuro', name: 'EEG (electroencefalogramă) prelungit', dur: 120, durLabel: '120 min', price: '700 lei' }
+  { id: 'n11', cat: 'neuro', pkg: true, name: 'Pachet neurofeedback – 20 ședințe', dur: 45, durLabel: '45 min / ședință', price: '6750 lei' }
 ];
 
 /* Locuri pe oră pentru fiecare terapie. Clinica a ales o limită largă (7): medicul așază apoi pacienții
