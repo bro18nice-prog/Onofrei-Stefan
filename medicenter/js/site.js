@@ -102,6 +102,22 @@ window.MC = window.MC || {};
     return list.filter(function (p, i) { return list.findIndex(function (x) { return x.name === p.name; }) === i; });
   }
 
+  /* EEG și neurofeedback: fotografie din cabinet + investigațiile cu preț și programare directă. */
+  function eegSection() {
+    var ph = MC.photo('eeg');
+    var items = ['n12', 'n13', 'n05'].map(MC.serviceById).filter(Boolean);
+    return '<section class="sec"><div class="wrap split split-rev">' +
+      '<figure class="feature eeg-photo rv"><img src="' + ph.src + '" alt="' + ph.alt + '" loading="lazy" width="900" height="1200"></figure>' +
+      '<div class="rv"><p class="eyebrow">Neurologie pediatrică · investigații</p><h2>EEG și neurofeedback, în clinică</h2>' +
+        '<p class="muted eeg-lead">EEG standard și prelungit, Brainmap și ședințe de neurofeedback, făcute de asistente pregătite în electroencefalografie și neurofeedback, în colaborare cu medicii clinicii.</p>' +
+        '<ul class="eeg-list">' + items.map(function (x) {
+          return '<li><span><b>' + MC.esc(x.name) + '</b>' + (x.durLabel ? '<small>' + x.durLabel + '</small>' : '') + '</span>' +
+            '<em>' + x.price + '</em><button class="btn soft small" data-action="book-svc" data-svc="' + x.id + '">Programează</button></li>';
+        }).join('') + '</ul>' +
+        '<button class="link-btn" data-action="goto-cat" data-cat="neuro">Toate serviciile de neurologie și neurofeedback ' + MC.ICONS.arrow + '</button>' +
+      '</div></div></section>';
+  }
+
   function home() {
     var docs = MC.TEAM.filter(function (p) { return p.group === 'medici'; });
     var others = uniquePeople(MC.TEAM.filter(function (p) { return p.group !== 'medici'; }));
@@ -144,7 +160,7 @@ window.MC = window.MC || {};
             return '<li><button data-action="' + x[2] + '" ' + attr + '><b>0' + (i + 1) + '</b>' +
               '<span><strong>' + x[0] + '</strong><small>' + x[1] + '</small></span>' + MC.ICONS.arrow + '</button></li>';
           }).join('') + '</ol></div>' +
-        '<figure class="feature rv"><img src="img/clinica.jpg" alt="Terapeută Medicenter lângă aparatura de recuperare" loading="lazy" width="800" height="1067">' +
+        '<figure class="feature rv"><img src="' + MC.photo('recuperare').src + '" alt="' + MC.photo('recuperare').alt + '" loading="lazy" width="800" height="1067">' +
           '<figcaption><b>Metode moderne de recuperare</b><span>Aparatură și tehnici folosite în clinică</span>' +
           '<ul>' + methods.map(function (m) { return '<li>' + m + '</li>'; }).join('') + '</ul></figcaption></figure>' +
       '</div></section>' +
@@ -157,6 +173,8 @@ window.MC = window.MC || {};
             '<button class="btn primary block" data-action="book-svc" data-svc="' + p.book + '">Programează consultația</button></div></article>';
         }).join('') + '</div>' +
       '</div></section>' +
+
+      eegSection() +
 
       '<section class="stats"><div class="wrap stats-in">' +
         '<div><b>' + MC.SERVICES.length + '</b><span>servicii și pachete</span></div>' +

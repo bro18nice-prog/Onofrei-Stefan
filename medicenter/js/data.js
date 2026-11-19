@@ -132,6 +132,15 @@ MC.slotHours = function (service) {
  * `photo`: fotografia din img/echipa/ (gol = se afișează inițialele).
  * `book`: serviciul care se deschide la „Programează” (consultația medicului).
  */
+/* Fotografii din clinică. Prima pagină le folosește pe secțiuni (tag);
+   tot de aici se va construi mai târziu galeria foto (adaugi un rând pentru fiecare poză nouă din img/clinica/). */
+MC.PHOTOS = [
+  { src: 'img/hero.jpg', alt: 'Recepția Medicenter Clinic', tag: 'receptie' },
+  { src: 'img/clinica.jpg', alt: 'Terapeută Medicenter lângă aparatura de recuperare', tag: 'recuperare' },
+  { src: 'img/clinica/eeg.jpg', alt: 'Înregistrare EEG în cabinetul Medicenter Clinic', tag: 'eeg' }
+];
+MC.photo = function (tag) { return MC.PHOTOS.find(function (p) { return p.tag === tag; }); };
+
 MC.TEAM_GROUPS = [
   { id: 'medici', name: 'Echipa medicală' },
   { id: 'fizio', name: 'Echipa de fizioterapie și recuperare medicală' },

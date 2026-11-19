@@ -751,3 +751,18 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .ib-close { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; font-size: 1.3rem; cursor: pointer; }
 .admin:has(.install-banner) { padding-bottom: 120px; }
 .ib-text { flex: 1 1 220px; }
+
+/* EEG și neurofeedback (prima pagină) */
+.split-rev { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr); }
+.eeg-photo { aspect-ratio: 3 / 4; }
+.eeg-photo img { object-position: center 40%; }
+.eeg-lead { margin: 4px 0 18px; max-width: 54ch; }
+.eeg-list { list-style: none; margin: 0 0 16px; padding: 0; border-top: 1px solid var(--line); }
+.eeg-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.eeg-list b { display: block; color: var(--navy); }
+.eeg-list small { color: var(--muted); }
+.eeg-list em { font-style: normal; font-weight: 800; color: var(--slate); white-space: nowrap; }
+.eeg-list + .link-btn { display: inline-flex; align-items: center; gap: 6px; }
+.eeg-list + .link-btn svg { width: 16px; }
+@media (max-width: 860px) { .split-rev { grid-template-columns: minmax(0, 1fr); } .eeg-photo { max-height: 460px; aspect-ratio: auto; } }
+@media (max-width: 480px) { .eeg-list li { grid-template-columns: minmax(0, 1fr) auto; } .eeg-list li .btn { grid-column: 1 / -1; justify-self: start; } }
