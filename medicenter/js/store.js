@@ -63,6 +63,7 @@ window.MC = window.MC || {};
   var state = {
     settings: withDefaults({}),
     bookings: [],
+    features: { caps: true, therapist: true }, // false cât timp baza de date nu are încă tabelele noi
     slotCaps: [],     // locuri setate manual: { date, hour, cat ('*' = toată clinica), cap }
     loaded: null,     // { from, to } interval încărcat
     role: null,       // 'admin' | 'staff' | null
@@ -340,9 +341,11 @@ window.MC = window.MC || {};
         ? sb.from('bookings').select('*').gte('date', range.from).lte('date', range.to)
         : sb.rpc('get_availability', { p_from: range.from, p_to: range.to });
       var caps = sb.from('slot_caps').select('date,hour,cat,cap').gte('date', range.from).lte('date', range.to);
-      return Promise.all([q, caps]).then(function (all) {
+      var probe = state.role ? sb.from('bookings').select('therapist').limit(1) : Promise.resolve({ error: null });
+      return Promise.all([q, caps, probe]).then(function (all) {
         var res = all[0], rc = all[1];
         if (res.error) throw res.error;
+        state.features = { caps: !rc.error, therapist: !all[2].error };
         state.bookings = (res.data || []).map(fromRow);
         // dacă tabelul nu există încă (baza neactualizată), site-ul merge mai departe fără locuri manuale
         state.slotCaps = rc.error ? [] : (rc.data || []).map(function (c) { return { date: c.date, hour: +c.hour, cat: c.cat, cap: +c.cap }; });
@@ -524,6 +527,7 @@ window.MC = window.MC || {};
     countAt: countAt,
     check: check,
     slotCap: slotCap,
+    supports: function (name) { return !!state.features[name]; },
     countWhere: countWhere,
     setSlotCap: impl.setSlotCap,
     setTherapist: impl.setTherapist,

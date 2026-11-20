@@ -182,7 +182,7 @@ window.MC = window.MC || {};
         '<select id="adm-filter" data-change="adm-filter">' +
           '<option value="toate"' + (a.filter === 'toate' ? ' selected' : '') + '>Toate secțiile</option>' +
           '<optgroup label="Secția">' + MC.CATS.map(function (c) { return '<option value="' + c.id + '"' + (a.filter === c.id ? ' selected' : '') + '>' + c.name + '</option>'; }).join('') + '</optgroup>' +
-          '<optgroup label="Terapeutul">' + MC.staffNames().map(function (n) { return '<option value="t:' + MC.esc(n) + '"' + (a.filter === 't:' + n ? ' selected' : '') + '>' + MC.esc(n) + '</option>'; }).join('') + '</optgroup>' +
+          (!MC.store.supports('therapist') ? '' : '<optgroup label="Terapeutul">' + MC.staffNames().map(function (n) { return '<option value="t:' + MC.esc(n) + '"' + (a.filter === 't:' + n ? ' selected' : '') + '>' + MC.esc(n) + '</option>'; }).join('') + '</optgroup>') +
         '</select>' +
         '<button class="btn primary small" data-action="adm-new">+ Programare</button>' +
       '</div></div>';
@@ -202,7 +202,7 @@ window.MC = window.MC || {};
     var cols = 'grid-template-columns:56px repeat(' + shown.length + ', minmax(0,1fr))';
     var grid = '<div class="ag-scroll"><div class="ag" style="' + cols + '"><div class="ag-corner"></div>';
     shown.forEach(function (d) {
-      var shut = dayClosed(MC.ymd(d));
+      var shut = MC.store.supports('caps') && dayClosed(MC.ymd(d));
       grid += '<div class="ag-day' + (MC.ymd(d) === todayYmd ? ' today' : '') + (shut ? ' shut' : '') + '">' + MC.DAYS_SHORT[d.getDay()] + '<b>' + d.getDate() + '</b>' +
         (shut ? '<small>închis</small>' : '') + '</div>';
     });
@@ -327,7 +327,7 @@ window.MC = window.MC || {};
     var p = MC.adm.panel, date = p.date, hour = p.hour, sub = MC.adm.confirm;
     var used = MC.store.countWhere(date, hour, null, null);
     var all = MC.store.slotCap(date, hour, '*');
-    var shutDay = dayClosed(date);
+    var shutDay = MC.store.supports('caps') && dayClosed(date);
     var cats = MC.CATS.filter(function (c) { return MC.store.slotCap(date, hour, c.id) != null; });
     var state = shutDay ? 'Toată ziua este blocată pentru programări online.'
       : all === 0 ? 'Ora este blocată pentru programări online.'
@@ -335,10 +335,11 @@ window.MC = window.MC || {};
       : cats.length ? 'Locuri setate: ' + cats.map(function (c) { var v = MC.store.slotCap(date, hour, c.id); return c.short + ' ' + (v === 0 ? 'închis' : v); }).join(', ') + '.'
       : 'Locuri normale (după Setări).';
     var on = function (k) { return sub === k ? ' on' : ''; };
-    var grid = act(I.plus, 'Programare nouă', 'data-action="adm-sub" data-sub="add"', 'ok' + on('add')) +
+    var caps = MC.store.supports('caps');
+    var grid = act(I.plus, 'Programare nouă', 'data-action="adm-sub" data-sub="add"', 'ok' + on('add')) + (!caps ? '' :
       (all === 0 ? act(I.unlock, 'Deblochează ora', 'data-action="adm-block-hour" data-v=""') : act(I.lock, 'Blochează ora', 'data-action="adm-block-hour" data-v="0"', 'bad')) +
       act(I.seats, 'Locuri la ora asta', 'data-action="adm-sub" data-sub="caps"', on('caps')) +
-      (shutDay ? act(I.dayok, 'Deblochează ziua', 'data-action="adm-open-day" data-date="' + date + '"') : act(I.day, 'Blochează ziua', 'data-action="adm-close-day" data-date="' + date + '"', 'bad'));
+      (shutDay ? act(I.dayok, 'Deblochează ziua', 'data-action="adm-open-day" data-date="' + date + '"') : act(I.day, 'Blochează ziua', 'data-action="adm-close-day" data-date="' + date + '"', 'bad')));
     var form = sub === 'add' ? addForm(date, hour) : sub === 'caps' ? capsCard(date, hour) : '';
     return '<div class="card"><div class="panel-head"><h2 class="card-title">' + MC.cap(MC.fmtDate(date)) + ', ora ' + MC.hourLabel(hour) + '</h2>' +
       '<button class="icon-btn" data-action="adm-close" aria-label="Închide">×</button></div>' +
@@ -489,7 +490,7 @@ window.MC = window.MC || {};
       '<div class="kv"><span>' + (pending ? 'Data cerută' : 'Data') + '</span><b>' + MC.cap(MC.fmtDate(b.date)) + '</b></div>' +
       '<div class="kv"><span>Ora</span><b>' + MC.hourLabel(b.hour) + ' – ' + MC.pad(Math.floor(endMin / 60)) + ':' + MC.pad(endMin % 60) + '</b></div>' +
       (b.availability ? '<div class="kv"><span>Poate veni</span><b>' + MC.esc(b.availability) + '</b></div>' : '') +
-      '<div class="kv kv-select"><label for="bk-ther">Terapeut</label><select id="bk-ther" data-change="adm-therapist" data-id="' + b.id + '">' + therapistOptions(b.therapist) + '</select></div>' +
+      (!MC.store.supports('therapist') ? '' : '<div class="kv kv-select"><label for="bk-ther">Terapeut</label><select id="bk-ther" data-change="adm-therapist" data-id="' + b.id + '">' + therapistOptions(b.therapist) + '</select></div>') +
       (ev ? '<div class="eval-box' + (b.evalDeclared ? '' : ' warn') + '">' + (b.evalDeclared
         ? 'Pacientul declară că a făcut <b>' + MC.esc(MC.serviceById(ev).name) + '</b>. Verifică înainte de confirmare.'
         : 'Terapia cere <b>' + MC.esc(MC.serviceById(ev).name) + '</b> înainte.') + '<div id="eval-history"></div></div>' : '') +
@@ -534,7 +535,7 @@ window.MC = window.MC || {};
       '<div class="row2"><div><label for="ad-child">Copil (opțional)</label><input id="ad-child" maxlength="120"></div>' +
       '<div><label for="ad-age">Vârsta copilului</label><input id="ad-age" type="number" min="0" max="17"></div></div>' +
       '<label for="ad-phone">Telefon</label><input id="ad-phone" type="tel" inputmode="tel" placeholder="07xx xxx xxx">' +
-      '<label for="ad-ther">Terapeut</label><select id="ad-ther">' + therapistOptions(MC.adm.filter.indexOf('t:') === 0 ? MC.adm.filter.slice(2) : '') + '</select>' +
+      (MC.store.supports('therapist') ? '<label for="ad-ther">Terapeut</label><select id="ad-ther">' + therapistOptions(MC.adm.filter.indexOf('t:') === 0 ? MC.adm.filter.slice(2) : '') + '</select>' : '') +
       '<label for="ad-note">Observații</label><textarea id="ad-note" rows="2"></textarea>' +
       '<p class="form-error" id="ad-error" role="alert" hidden></p>' +
       '<div class="row2"><button class="btn primary" type="submit">Adaugă în agendă</button><button class="btn ghost" type="button" data-action="adm-cancel-no">Renunță</button></div></form>';
@@ -553,7 +554,7 @@ window.MC = window.MC || {};
       '<div class="row2"><div><label for="ad-child">Copil (opțional)</label><input id="ad-child" maxlength="120"></div>' +
       '<div><label for="ad-age">Vârsta copilului</label><input id="ad-age" type="number" min="0" max="17"></div></div>' +
       '<label for="ad-phone">Telefon</label><input id="ad-phone" type="tel" inputmode="tel" placeholder="07xx xxx xxx">' +
-      '<label for="ad-ther">Terapeut</label><select id="ad-ther">' + therapistOptions(MC.adm.filter.indexOf('t:') === 0 ? MC.adm.filter.slice(2) : '') + '</select>' +
+      (MC.store.supports('therapist') ? '<label for="ad-ther">Terapeut</label><select id="ad-ther">' + therapistOptions(MC.adm.filter.indexOf('t:') === 0 ? MC.adm.filter.slice(2) : '') + '</select>' : '') +
       '<label for="ad-note">Observații</label><textarea id="ad-note" rows="2"></textarea>' +
       '<p class="form-error" id="ad-error" role="alert" hidden></p>' +
       '<button class="btn primary block" type="submit">Adaugă în agendă (confirmată)</button>' +
