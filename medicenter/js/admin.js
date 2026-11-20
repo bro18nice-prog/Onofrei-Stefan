@@ -159,7 +159,8 @@ window.MC = window.MC || {};
         '<label class="sr" for="adm-filter">Secția</label>' +
         '<select id="adm-filter" data-change="adm-filter">' +
           '<option value="toate"' + (a.filter === 'toate' ? ' selected' : '') + '>Toate secțiile</option>' +
-          MC.CATS.map(function (c) { return '<option value="' + c.id + '"' + (a.filter === c.id ? ' selected' : '') + '>' + c.name + '</option>'; }).join('') +
+          '<optgroup label="Secția">' + MC.CATS.map(function (c) { return '<option value="' + c.id + '"' + (a.filter === c.id ? ' selected' : '') + '>' + c.name + '</option>'; }).join('') + '</optgroup>' +
+          '<optgroup label="Terapeutul">' + MC.staffNames().map(function (n) { return '<option value="t:' + MC.esc(n) + '"' + (a.filter === 't:' + n ? ' selected' : '') + '>' + MC.esc(n) + '</option>'; }).join('') + '</optgroup>' +
         '</select>' +
         '<button class="btn primary small" data-action="adm-new">+ Programare</button>' +
       '</div></div>';
@@ -168,7 +169,7 @@ window.MC = window.MC || {};
       return '<span><i style="background:' + c.color + '"></i>' + c.short + '</span>';
     }).join('') +
       '<span class="lg-pending">în așteptare</span>' +
-      '<span class="cap-info">Locurile pe oră se setează pe fiecare terapie, în Setări</span>' +
+      '<span class="cap-info">Apasă pe o oră ca să schimbi câte locuri sunt atunci</span>' +
       '</div>';
 
     var dayTabs = narrow() ? '<div class="day-tabs">' + days.map(function (d, i) {
@@ -199,14 +200,24 @@ window.MC = window.MC || {};
 
   function cell(date, hour, past) {
     var a = MC.adm;
+    var byT = a.filter.indexOf('t:') === 0 ? a.filter.slice(2) : null;
     var list = MC.store.bookingsOn(date).filter(function (b) {
-      return hour >= b.hour && hour < b.hour + b.hours && (a.filter === 'toate' || b.cat === a.filter);
+      return hour >= b.hour && hour < b.hour + b.hours && (a.filter === 'toate' || (byT ? b.therapist === byT : b.cat === a.filter));
     }).sort(function (x, y) { return x.cat < y.cat ? -1 : x.cat > y.cat ? 1 : x.name.localeCompare(y.name); });
     var nPend = list.filter(function (b) { return b.status === 'pending'; }).length;
     var badge = list.length ? '<span class="cnt neutral">' + list.length + '</span>' : '';
     if (nPend) badge = '<span class="cnt pend" title="cereri în așteptare">' + nPend + '?</span>' + badge;
+    var catF = MC.catById(a.filter) ? a.filter : '*';
+    var capM = MC.store.slotCap(date, hour, catF);
+    var anyCat = catF === '*' && MC.CATS.some(function (c) { return MC.store.slotCap(date, hour, c.id) != null; });
+    if (capM != null) badge = '<span class="cnt capo" title="locuri setate manual">' + (capM === 0 ? 'închis' : 'max ' + capM) + '</span>' + badge;
+    else if (anyCat) {
+      var set = MC.CATS.filter(function (c) { return MC.store.slotCap(date, hour, c.id) != null; });
+      var lbl = set.length === 1 ? set[0].short + ' ' + (MC.store.slotCap(date, hour, set[0].id) === 0 ? 'închis' : 'max ' + MC.store.slotCap(date, hour, set[0].id)) : 'locuri setate';
+      badge = '<span class="cnt capo" title="locuri setate pe secții">' + lbl + '</span>' + badge;
+    }
     var sel = a.panel.mode === 'new' && a.panel.date === date && a.panel.hour === hour;
-    var html = '<div class="ag-cell' + (past ? ' past' : '') + (sel ? ' picked' : '') +
+    var html = '<div class="ag-cell' + (past ? ' past' : '') + (sel ? ' picked' : '') + (capM === 0 ? ' closed' : '') +
       '" data-cell="1" data-date="' + date + '" data-hour="' + hour + '"><div class="cell-top">' + badge + '</div>';
     list.forEach(function (b) {
       var c = MC.catById(b.cat);
@@ -218,7 +229,8 @@ window.MC = window.MC || {};
         '" style="--cat:' + c.color + '"' + (start ? ' draggable="true"' : '') + ' data-action="adm-open" data-id="' + b.id + '"' +
         ' title="' + MC.esc(who + (svc ? ' · ' + svc.name : '') + (b.status === 'pending' ? ' · în așteptare' : '')) + '">' +
         '<span class="bn">' + (start ? '' : '↳ ') + (b.status === 'pending' ? '? ' : '') + MC.esc(who) + '</span>' +
-        '<span class="bs">' + MC.esc(svc ? shortSvc(svc) : c.short) + '</span></div>';
+        '<span class="bs">' + MC.esc(svc ? shortSvc(svc) : c.short) + '</span>' +
+        (b.therapist ? '<span class="bt">' + MC.esc(MC.nick(b.therapist)) + '</span>' : '') + '</div>';
     });
     return html + '</div>';
   }
@@ -241,6 +253,31 @@ window.MC = window.MC || {};
         return '<option value="' + s.id + '"' + (s.id === selected ? ' selected' : '') + '>' + MC.esc(s.name) + (s.durLabel ? ' · ' + s.durLabel : '') + '</option>';
       }).join('') + '</optgroup>';
     }).join('');
+  }
+
+  function therapistOptions(selected) {
+    return '<option value="">— nealocat —</option>' + MC.TEAM_GROUPS.map(function (g) {
+      var names = MC.TEAM.filter(function (p) { return p.group === g.id; }).map(function (p) { return p.name; });
+      return '<optgroup label="' + MC.esc(g.name) + '">' + names.map(function (n) {
+        return '<option value="' + MC.esc(n) + '"' + (n === selected ? ' selected' : '') + '>' + MC.esc(n) + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('');
+  }
+
+  /* Câte locuri sunt la o anumită oră: setate manual pe secție sau pe toată clinica. */
+  function capsCard(date, hour) {
+    var rowsH = [{ id: '*', short: 'Toată clinica', color: '#50677a' }].concat(MC.CATS).map(function (c) {
+      var v = MC.store.slotCap(date, hour, c.id);
+      var used = MC.store.countWhere(date, hour, null, c.id === '*' ? null : c.id);
+      return '<div class="cap-row"><label for="cap-' + (c.id === '*' ? 'all' : c.id) + '-h"><i class="dot" style="background:' + c.color + '"></i>' + c.short +
+        '<small>' + used + ' ocupate</small></label>' +
+        '<input type="number" min="0" max="50" inputmode="numeric" id="cap-' + (c.id === '*' ? 'all' : c.id) + '-h" data-cat="' + c.id + '" placeholder="normal" value="' + (v == null ? '' : v) + '"></div>';
+    }).join('');
+    return '<form class="card form caps-card" id="adm-caps" data-date="' + date + '" data-hour="' + hour + '" novalidate>' +
+      '<h3>Locuri la ora ' + MC.hourLabel(hour) + ', ' + MC.fmtDate(date) + '</h3>' +
+      '<p class="muted small">Gol = normal (după Setări). 0 = închis la ora asta. Pacienții văd online doar orele cu locuri.</p>' + rowsH +
+      '<p class="form-error" id="caps-error" role="alert" hidden></p>' +
+      '<button class="btn primary block" type="submit">Salvează locurile</button></form>';
   }
 
   function panel() {
@@ -357,6 +394,7 @@ window.MC = window.MC || {};
       '<div class="kv"><span>' + (pending ? 'Data cerută' : 'Data') + '</span><b>' + MC.cap(MC.fmtDate(b.date)) + '</b></div>' +
       '<div class="kv"><span>Ora</span><b>' + MC.hourLabel(b.hour) + ' – ' + MC.pad(Math.floor(endMin / 60)) + ':' + MC.pad(endMin % 60) + '</b></div>' +
       (b.availability ? '<div class="kv"><span>Poate veni</span><b>' + MC.esc(b.availability) + '</b></div>' : '') +
+      '<div class="kv kv-select"><label for="bk-ther">Terapeut</label><select id="bk-ther" data-change="adm-therapist" data-id="' + b.id + '">' + therapistOptions(b.therapist) + '</select></div>' +
       (ev ? '<div class="eval-box' + (b.evalDeclared ? '' : ' warn') + '">' + (b.evalDeclared
         ? 'Pacientul declară că a făcut <b>' + MC.esc(MC.serviceById(ev).name) + '</b>. Verifică înainte de confirmare.'
         : 'Terapia cere <b>' + MC.esc(MC.serviceById(ev).name) + '</b> înainte.') + '<div id="eval-history"></div></div>' : '') +
@@ -403,8 +441,9 @@ window.MC = window.MC || {};
   function panelNew() {
     var p = MC.adm.panel;
     var date = p.date || MC.ymd(MC.today());
-    var firstOfCat = MC.adm.filter !== 'toate' ? MC.SERVICES.find(function (s) { return s.cat === MC.adm.filter; }).id : 'k01';
-    return '<form class="card form" id="adm-add" novalidate><div class="panel-head"><h2 class="card-title">Programare nouă</h2>' +
+    var firstOfCat = MC.catById(MC.adm.filter) ? MC.SERVICES.find(function (s) { return s.cat === MC.adm.filter; }).id : 'k01';
+    return (p.fromCell ? capsCard(date, p.hour) : '') +
+      '<form class="card form" id="adm-add" novalidate><div class="panel-head"><h2 class="card-title">Programare nouă</h2>' +
       '<button type="button" class="icon-btn" data-action="adm-close" aria-label="Închide">×</button></div>' +
       '<label for="ad-svc">Serviciu</label><select id="ad-svc" required>' + serviceOptions(p.serviceId || firstOfCat) + '</select>' +
       '<div class="row2"><div><label for="ad-date">Ziua</label><input type="date" id="ad-date" value="' + date + '" required></div>' +
@@ -413,6 +452,7 @@ window.MC = window.MC || {};
       '<div class="row2"><div><label for="ad-child">Copil (opțional)</label><input id="ad-child" maxlength="120"></div>' +
       '<div><label for="ad-age">Vârsta copilului</label><input id="ad-age" type="number" min="0" max="17"></div></div>' +
       '<label for="ad-phone">Telefon</label><input id="ad-phone" type="tel" inputmode="tel" placeholder="07xx xxx xxx">' +
+      '<label for="ad-ther">Terapeut</label><select id="ad-ther">' + therapistOptions(MC.adm.filter.indexOf('t:') === 0 ? MC.adm.filter.slice(2) : '') + '</select>' +
       '<label for="ad-note">Observații</label><textarea id="ad-note" rows="2"></textarea>' +
       '<p class="form-error" id="ad-error" role="alert" hidden></p>' +
       '<button class="btn primary block" type="submit">Adaugă în agendă (confirmată)</button>' +
@@ -654,7 +694,7 @@ window.MC = window.MC || {};
 
   /* Click pe spațiul liber al unei ore = programare nouă în acea oră. */
   MC.adminCellClick = function (cellEl) {
-    MC.adm.panel = { mode: 'new', date: cellEl.dataset.date, hour: +cellEl.dataset.hour };
+    MC.adm.panel = { mode: 'new', date: cellEl.dataset.date, hour: +cellEl.dataset.hour, fromCell: true };
     MC.adm.confirm = null;
     MC.render();
     focusPanel();
@@ -668,6 +708,11 @@ window.MC = window.MC || {};
 
   MC.adminChange = function (el) {
     if (el.dataset.change === 'adm-filter') { MC.adm.filter = el.value; MC.render(); return true; }
+    if (el.dataset.change === 'adm-therapist') {
+      var tn = el.value;
+      run(MC.store.setTherapist(el.dataset.id, tn), tn ? 'Terapeut: ' + tn + '.' : 'Terapeutul a fost scos.').then(MC.render, function () {});
+      return true;
+    }
     return false;
   };
 
@@ -728,6 +773,19 @@ window.MC = window.MC || {};
       }, function () {});
       return true;
     }
+    if (form.id === 'adm-caps') {
+      var cd = form.dataset.date, ch = +form.dataset.hour;
+      var jobs = [];
+      Array.prototype.forEach.call(form.querySelectorAll('input[data-cat]'), function (inp) {
+        var raw = inp.value.trim();
+        var v = raw === '' ? null : Math.max(0, Math.min(50, parseInt(raw, 10) || 0));
+        if (v !== MC.store.slotCap(cd, ch, inp.dataset.cat)) jobs.push([inp.dataset.cat, v]);
+      });
+      if (!jobs.length) { MC.toast('Nimic de schimbat.', 'ok'); return true; }
+      var chain = jobs.reduce(function (pr, j) { return pr.then(function () { return MC.store.setSlotCap(cd, ch, j[0], j[1]); }); }, Promise.resolve());
+      run(chain, 'Locurile pentru ora ' + MC.hourLabel(ch) + ' au fost salvate.', 'caps-error').then(MC.render, function () {});
+      return true;
+    }
     if (form.id === 'adm-add') {
       var svc = MC.serviceById(val('ad-svc'));
       var date = val('ad-date');
@@ -741,7 +799,10 @@ window.MC = window.MC || {};
       var data = { serviceId: svc.id, date: date, hour: hour, name: name, phone: phone || '—', note: val('ad-note'), source: 'clinica',
         childName: val('ad-child'), childAge: val('ad-child').trim() && age !== '' ? Math.max(0, Math.min(17, +age)) : null };
       MC.store.loadRange(date, date).then(function () {
-        return run(MC.store.add(data), name.trim() + ' a fost adăugat(ă) în agendă.', 'ad-error');
+        var ther = val('ad-ther');
+        return run(MC.store.add(data).then(function (b) {
+          return ther ? MC.store.setTherapist(b.id, ther).then(function () { return b; }) : b;
+        }), name.trim() + ' a fost adăugat(ă) în agendă.', 'ad-error');
       }).then(function (b) {
         MC.adm.panel = { mode: 'booking', id: b.id };
         gotoWeek(MC.weekStart(MC.parseYmd(date)));

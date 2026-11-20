@@ -170,6 +170,17 @@ MC.PHOTOS = [
 MC.photo = function (tag) { return MC.PHOTOS.find(function (p) { return p.tag === tag; }); };
 MC.photosByTag = function (tag) { return MC.PHOTOS.filter(function (p) { return p.tag === tag; }); };
 
+/* Numele scurte afișate pe programări în agendă (terapeutul care lucrează cu pacientul). */
+MC.NICK = {
+  'Dr. Darie Ludmila': 'Dr. Darie', 'Dr. Ciungan Mihai': 'Dr. Ciungan', 'Dr. Stroiștean-Spatariu Paula Bianca': 'Dr. Stroiștean',
+  'Pintilie Paul Bogdan': 'Bogdan', 'Pintilie Andreea Maria': 'Andreea', 'Aivanoaiei Raluca Georgiana': 'Raluca',
+  'Maruneac Diana Paula': 'Paula', 'Iremiciuc Mihaela': 'Mihaela', 'Roibu Ana Marcela': 'Ana'
+};
+MC.staffNames = function () {
+  return MC.TEAM.map(function (p) { return p.name; }).filter(function (n, i, a) { return a.indexOf(n) === i; });
+};
+MC.nick = function (name) { return MC.NICK[name] || String(name || '').split(' ').slice(-1)[0]; };
+
 MC.TEAM_GROUPS = [
   { id: 'medici', name: 'Echipa medicală' },
   { id: 'fizio', name: 'Echipa de fizioterapie și recuperare medicală' },

@@ -72,6 +72,25 @@ create index if not exists bookings_date_service on public.bookings (date, servi
 create unique index if not exists bookings_token on public.bookings (token);
 create index if not exists bookings_phone on public.bookings (phone);
 
+-- Terapeutul care lucrează cu pacientul (ales din agendă).
+alter table public.bookings add column if not exists therapist text not null default '';
+do $$
+begin
+  alter table public.bookings add constraint bookings_therapist_check check (char_length(therapist) <= 80);
+exception when duplicate_object then null;
+end $$;
+
+-- Locuri setate manual din agendă pentru o anumită zi și oră (pe secție sau '*' = toată clinica).
+-- Fără nume sau date personale: le citesc și pacienții, ca să vadă doar orele cu locuri.
+create table if not exists public.slot_caps (
+  date date not null,
+  hour smallint not null check (hour between 0 and 23),
+  cat text not null check (cat in ('kineto', 'masaj', 'fizio', 'neuro', '*')),
+  cap smallint not null check (cap between 0 and 50),
+  updated_at timestamptz not null default now(),
+  primary key (date, hour, cat)
+);
+
 -- ---------- cine este membru al personalului ----------
 
 -- Funcțiile ajutătoare stau în schema „private”, care nu este expusă prin API.
@@ -112,6 +131,7 @@ language plpgsql security definer set search_path = public as $$
 declare
   s jsonb;
   cap int;
+  c int;
   n int;
   k int;
 begin
@@ -123,8 +143,8 @@ begin
     raise exception 'OUT_OF_HOURS';
   end if;
   cap := coalesce((s -> 'serviceCapacity' ->> p_service)::int, (s -> 'capacity' ->> p_cat)::int, 1);
-  -- două programări simultane pe aceeași terapie și zi așteaptă una după alta, ca să nu se depășească locurile
-  perform pg_advisory_xact_lock(hashtext(p_service || p_date::text));
+  -- programările din aceeași zi se verifică una după alta, ca să nu se depășească locurile
+  perform pg_advisory_xact_lock(hashtext('medicenter:' || p_date::text));
   for k in 0 .. p_hours - 1 loop
     select count(*) into n
     from public.bookings b
@@ -134,6 +154,23 @@ begin
       and p_hour + k >= b.hour and p_hour + k < b.hour + b.hours;
     if n >= cap then
       raise exception 'FULL';
+    end if;
+    -- locuri setate manual din agendă pentru ora respectivă: pe secție și/sau pe toată clinica ('*')
+    select sc.cap into c from public.slot_caps sc where sc.date = p_date and sc.hour = p_hour + k and sc.cat = p_cat;
+    if found then
+      select count(*) into n from public.bookings b
+      where b.cat = p_cat and b.date = p_date and b.status in ('pending', 'confirmed')
+        and (p_exclude is null or b.id <> p_exclude)
+        and p_hour + k >= b.hour and p_hour + k < b.hour + b.hours;
+      if n >= c then raise exception 'FULL'; end if;
+    end if;
+    select sc.cap into c from public.slot_caps sc where sc.date = p_date and sc.hour = p_hour + k and sc.cat = '*';
+    if found then
+      select count(*) into n from public.bookings b
+      where b.date = p_date and b.status in ('pending', 'confirmed')
+        and (p_exclude is null or b.id <> p_exclude)
+        and p_hour + k >= b.hour and p_hour + k < b.hour + b.hours;
+      if n >= c then raise exception 'FULL'; end if;
     end if;
   end loop;
 end $$;
@@ -303,6 +340,18 @@ create policy "programari modificate de personal" on public.bookings for update 
 drop policy if exists "programari anulate de personal" on public.bookings;
 create policy "programari anulate de personal" on public.bookings for delete using (private.is_staff());
 -- Nu există regulă de insert: programările noi intră doar prin book(), care verifică locurile.
+
+alter table public.slot_caps enable row level security;
+drop policy if exists "locuri vizibile" on public.slot_caps;
+create policy "locuri vizibile" on public.slot_caps for select using (true);
+drop policy if exists "locuri setate de personal" on public.slot_caps;
+create policy "locuri setate de personal" on public.slot_caps for insert with check (private.is_staff());
+drop policy if exists "locuri modificate de personal" on public.slot_caps;
+create policy "locuri modificate de personal" on public.slot_caps for update using (private.is_staff()) with check (private.is_staff());
+drop policy if exists "locuri sterse de personal" on public.slot_caps;
+create policy "locuri sterse de personal" on public.slot_caps for delete using (private.is_staff());
+grant select on public.slot_caps to anon, authenticated;
+grant insert, update, delete on public.slot_caps to authenticated;
 
 revoke all on function public.move_booking(uuid, date, int, boolean) from public, anon;
 grant execute on function public.move_booking(uuid, date, int, boolean) to authenticated;

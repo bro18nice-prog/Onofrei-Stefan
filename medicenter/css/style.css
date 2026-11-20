@@ -794,3 +794,16 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
   .pl-top.has-photo { grid-template-columns: minmax(0, 1fr); }
   .pl-top.has-photo .pl-photo { order: -1; height: auto; aspect-ratio: 16 / 11; }
 }
+
+/* locuri setate manual și terapeut */
+.cnt.capo { background: var(--sand-soft); color: var(--sand-deep); border: 1px solid #ecd3ae; font-weight: 800; }
+.ag-cell.closed { background: repeating-linear-gradient(135deg, #f6efe4 0 8px, #fbf7f0 8px 16px); }
+.bchip .bt { display: block; font-size: 0.72rem; font-weight: 700; color: color-mix(in srgb, var(--cat) 75%, #000); }
+.caps-card h3 { margin: 0 0 4px; }
+.cap-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.cap-row label { margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cap-row label small { color: var(--muted); font-weight: 500; }
+.cap-row input { text-align: center; }
+.kv.kv-select { display: grid; gap: 6px; }
+.kv-select select { width: 100%; min-width: 0; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); font-weight: 600; }
+.caps-card { border: 1.5px solid #ecd3ae; }

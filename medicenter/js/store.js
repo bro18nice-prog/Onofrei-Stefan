@@ -63,6 +63,7 @@ window.MC = window.MC || {};
   var state = {
     settings: withDefaults({}),
     bookings: [],
+    slotCaps: [],     // locuri setate manual: { date, hour, cat ('*' = toată clinica), cap }
     loaded: null,     // { from, to } interval încărcat
     role: null,       // 'admin' | 'staff' | null
     email: null,
@@ -99,6 +100,18 @@ window.MC = window.MC || {};
     }).length;
   }
 
+  /* Locurile setate manual din agendă pentru o oră (pe secție sau '*' = toată clinica), sau null. */
+  function slotCap(date, hour, cat) {
+    var x = state.slotCaps.find(function (c) { return c.date === date && c.hour === hour && c.cat === cat; });
+    return x ? x.cap : null;
+  }
+  function countWhere(date, hour, excludeId, cat) {
+    return state.bookings.filter(function (b) {
+      return active(b) && b.date === date && b.id !== excludeId && (!cat || b.cat === cat) &&
+        hour >= b.hour && hour < b.hour + b.hours;
+    }).length;
+  }
+
   /* Poate începe terapia la ora `hour`? Întoarce { ok, free, reason }. */
   function check(serviceId, date, hour, hours, excludeId) {
     var s = state.settings;
@@ -107,7 +120,14 @@ window.MC = window.MC || {};
     if (hour < s.open || hour + hours > s.close) return { ok: false, free: 0, reason: ERRORS.OUT_OF_HOURS };
     var cap = capOf(serviceId);
     var free = cap;
-    for (var k = 0; k < hours; k++) free = Math.min(free, cap - countAt(serviceId, date, hour + k, excludeId));
+    var cat = (MC.serviceById(serviceId) || {}).cat;
+    for (var k = 0; k < hours; k++) {
+      free = Math.min(free, cap - countAt(serviceId, date, hour + k, excludeId));
+      var cc = slotCap(date, hour + k, cat);
+      if (cc != null) free = Math.min(free, cc - countWhere(date, hour + k, excludeId, cat));
+      var ac = slotCap(date, hour + k, '*');
+      if (ac != null) free = Math.min(free, ac - countWhere(date, hour + k, excludeId, null));
+    }
     if (free <= 0) return { ok: false, free: 0, reason: 'Ora ' + MC.hourLabel(hour) + ' este ocupată pentru această terapie.' };
     return { ok: true, free: free };
   }
@@ -134,7 +154,7 @@ window.MC = window.MC || {};
     try { authed = sessionStorage.getItem('medicenter-admin') === '1'; } catch (e) { /* doar în memorie */ }
 
     function save() {
-      try { localStorage.setItem(KEY, JSON.stringify({ settings: state.settings, bookings: state.bookings })); } catch (e) { /* rămâne în memorie */ }
+      try { localStorage.setItem(KEY, JSON.stringify({ settings: state.settings, bookings: state.bookings, slotCaps: state.slotCaps })); } catch (e) { /* rămâne în memorie */ }
     }
     function seed() {
       var names = ['Ion Popescu', 'Elena Dinu', 'Radu Ene', 'Ana Stan', 'Ioana Marin', 'Vlad Sava',
@@ -177,6 +197,7 @@ window.MC = window.MC || {};
         if (data && data.settings) {
           state.settings = withDefaults(data.settings);
           state.bookings = data.bookings || [];
+          state.slotCaps = data.slotCaps || [];
         } else {
           state.settings = withDefaults({});
           state.bookings = [];
@@ -188,6 +209,15 @@ window.MC = window.MC || {};
       },
       refresh: function () { return Promise.resolve(); },
       loadRange: function () { return Promise.resolve(); },
+      setSlotCap: function (date, hour, cat, cap) {
+        state.slotCaps = state.slotCaps.filter(function (c) { return !(c.date === date && c.hour === hour && c.cat === cat); });
+        if (cap != null) state.slotCaps.push({ date: date, hour: hour, cat: cat, cap: cap });
+        save(); return Promise.resolve();
+      },
+      setTherapist: function (id, name) {
+        var b = find(id); if (b) b.therapist = name || '';
+        save(); return Promise.resolve();
+      },
       add: function (data) {
         var svc = MC.serviceById(data.serviceId);
         var staff = data.source === 'clinica';
@@ -277,6 +307,7 @@ window.MC = window.MC || {};
         name: r.name || '', phone: r.phone || '', note: r.note || '', source: r.source || 'online',
         status: r.status || 'confirmed', childName: r.child_name || '', childAge: r.child_age == null ? null : r.child_age,
         availability: r.availability || '', evalDeclared: !!r.eval_declared, newPatient: !!r.new_patient, staffNote: r.staff_note || '',
+        therapist: r.therapist || '',
         createdAt: r.created_at
       };
     }
@@ -304,9 +335,13 @@ window.MC = window.MC || {};
       var q = state.role
         ? sb.from('bookings').select('*').gte('date', range.from).lte('date', range.to)
         : sb.rpc('get_availability', { p_from: range.from, p_to: range.to });
-      return q.then(function (res) {
+      var caps = sb.from('slot_caps').select('date,hour,cat,cap').gte('date', range.from).lte('date', range.to);
+      return Promise.all([q, caps]).then(function (all) {
+        var res = all[0], rc = all[1];
         if (res.error) throw res.error;
         state.bookings = (res.data || []).map(fromRow);
+        // dacă tabelul nu există încă (baza neactualizată), site-ul merge mai departe fără locuri manuale
+        state.slotCaps = rc.error ? [] : (rc.data || []).map(function (c) { return { date: c.date, hour: +c.hour, cat: c.cat, cap: +c.cap }; });
         state.loaded = range;
       });
     }
@@ -326,6 +361,22 @@ window.MC = window.MC || {};
         if (L && from >= L.from && to <= L.to) return Promise.resolve();
         var range = { from: L && L.from < from ? L.from : from, to: L && L.to > to ? L.to : to };
         return loadBookings(range).catch(fail);
+      },
+      setSlotCap: function (date, hour, cat, cap) {
+        var q = cap == null
+          ? sb.from('slot_caps').delete().eq('date', date).eq('hour', hour).eq('cat', cat)
+          : sb.from('slot_caps').upsert({ date: date, hour: hour, cat: cat, cap: cap, updated_at: new Date().toISOString() });
+        return q.then(function (res) {
+          if (res.error) return fail(res.error);
+          state.slotCaps = state.slotCaps.filter(function (c) { return !(c.date === date && c.hour === hour && c.cat === cat); });
+          if (cap != null) state.slotCaps.push({ date: date, hour: hour, cat: cat, cap: cap });
+        });
+      },
+      setTherapist: function (id, name) {
+        return sb.from('bookings').update({ therapist: name || '', updated_at: new Date().toISOString() }).eq('id', id).then(function (res) {
+          if (res.error) return fail(res.error);
+          var b = local(id); if (b) b.therapist = name || '';
+        });
       },
       add: function (data) {
         var svc = MC.serviceById(data.serviceId);
@@ -461,6 +512,10 @@ window.MC = window.MC || {};
     capOf: capOf,
     countAt: countAt,
     check: check,
+    slotCap: slotCap,
+    countWhere: countWhere,
+    setSlotCap: impl.setSlotCap,
+    setTherapist: impl.setTherapist,
     evalFor: evalFor,
     forNewPatients: forNewPatients,
     mine: mine,
