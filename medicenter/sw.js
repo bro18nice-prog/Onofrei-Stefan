@@ -12,3 +12,21 @@ self.addEventListener('fetch', function (e) {
       { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }));
 });
+
+/* Notificare primită de la server: „Cerere nouă de programare”. */
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Medicenter', {
+    body: d.body || 'Ai o cerere nouă în agendă.', icon: 'img/icon-192.png', badge: 'img/icon-192.png',
+    tag: 'medicenter-cerere', renotify: true, data: { url: d.url || 'agenda.html#admin' }
+  }));
+});
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var url = new URL((e.notification.data && e.notification.data.url) || 'agenda.html#admin', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+    for (var i = 0; i < list.length; i++) { if (list[i].url.indexOf('agenda.html') >= 0) { list[i].navigate(url); return list[i].focus(); } }
+    return self.clients.openWindow(url);
+  }));
+});

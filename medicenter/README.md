@@ -121,6 +121,11 @@ Apare iconița **Agenda**, care se deschide direct în agendă, pe tot ecranul. 
 - **Locuri la ora asta** — câți pacienți încap atunci (pe toată clinica sau pe secție);
 - **Blochează ziua** / **Deblochează ziua** — toată ziua.
 
+### Notificări pe telefon la cereri noi
+În agendă → **Cont și telefon** → **Activează notificările** (pe iPhone, din aplicația Agenda pusă pe ecran; pe Android, din Chrome).
+La fiecare cerere nouă de pe site apare pe telefon „Cerere nouă de programare”, cu serviciul, ziua și ora (fără numele pacientului);
+apăsând pe ea se deschide agenda. Se activează pe fiecare telefon în parte.
+
 ### Locuri pe oră, zile închise, terapeut
 - **Câte locuri sunt la o oră:** apeși pe ora din agendă → sus în dreapta, „Locuri la ora …”: pe toată clinica sau pe secție.
   Gol = normal (după Setări), 0 = închis la ora aceea. Ora primește eticheta „max N” sau „închis”.

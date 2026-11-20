@@ -400,3 +400,54 @@ where id = 1;
 -- Primul administrator. Ceilalți membri ai personalului se adaugă apoi din agendă → Setări → Personal.
 insert into public.staff (email, name, role) values (lower('EMAIL_ADMINISTRATOR'), 'Administrator', 'admin')
 on conflict (email) do nothing;
+
+-- ---------- notificări pe telefon pentru cererile noi ----------
+-- Telefoanele personalului se abonează din agendă (Cont și telefon → Activează notificările).
+-- La fiecare cerere nouă de pe site, declanșatorul cheamă funcția supabase/functions/notify-booking,
+-- care trimite notificarea (fără numele pacientului) pe toate telefoanele abonate.
+-- Cheile de semnare (VAPID) stau în Vault: 'vapid_public' și 'vapid_private'. Se creează o singură dată, separat
+-- (perechea publică e și în js/config.js → vapidPublicKey). Cheia privată nu se pune niciodată în acest fișier.
+
+create extension if not exists pg_net with schema extensions;
+alter table public.bookings add column if not exists notified_at timestamptz;
+create table if not exists public.push_subscriptions (
+  endpoint text primary key check (char_length(endpoint) <= 1000),
+  p256dh text not null check (char_length(p256dh) <= 200),
+  auth text not null check (char_length(auth) <= 100),
+  email text not null default '',
+  created_at timestamptz not null default now()
+);
+alter table public.push_subscriptions enable row level security;
+drop policy if exists "abonare personal" on public.push_subscriptions;
+create policy "abonare personal" on public.push_subscriptions for insert with check (private.is_staff());
+drop policy if exists "abonare actualizata de personal" on public.push_subscriptions;
+create policy "abonare actualizata de personal" on public.push_subscriptions for update using (private.is_staff()) with check (private.is_staff());
+drop policy if exists "dezabonare personal" on public.push_subscriptions;
+create policy "dezabonare personal" on public.push_subscriptions for delete using (private.is_staff());
+grant insert, update, delete on public.push_subscriptions to authenticated;
+
+create or replace function public.push_config() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'public', (select decrypted_secret from vault.decrypted_secrets where name = 'vapid_public'),
+    'private', (select decrypted_secret from vault.decrypted_secrets where name = 'vapid_private'))
+$$;
+revoke all on function public.push_config() from public, anon, authenticated;
+grant execute on function public.push_config() to service_role;
+
+-- Cheia „anon” de mai jos e publică (aceeași ca în js/config.js); funcția verifică singură că cererea e nouă.
+create or replace function private.notify_new_booking() returns trigger
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if new.source = 'online' and new.status = 'pending' then
+    perform net.http_post(
+      url := 'https://bywgiyyqwyrbvyfuqtcx.supabase.co/functions/v1/notify-booking',
+      body := jsonb_build_object('id', new.id),
+      headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ANON_KEY_DIN_CONFIG_JS')
+    );
+  end if;
+  return new;
+exception when others then
+  return new; -- notificarea nu are voie să blocheze programarea
+end $$;
+create or replace trigger bookings_notify after insert on public.bookings for each row execute function private.notify_new_booking();

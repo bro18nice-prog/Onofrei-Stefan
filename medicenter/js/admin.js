@@ -118,6 +118,12 @@ window.MC = window.MC || {};
     var d = device();
     var off = false;
     try { off = localStorage.getItem('medicenter-banner-off') === '1'; } catch (e) { /* opțional */ }
+    if (d !== 'desktop' && standalone() && MC.adm.tab !== 'cont' && pushAvailable() && MC.adm.push === 'off') {
+      var offP = false;
+      try { offP = localStorage.getItem('medicenter-push-banner-off') === '1'; } catch (e) { /* opțional */ }
+      if (!offP) return '<div class="install-banner" role="note"><span class="ib-text"><b>Afli imediat de cererile noi:</b> activează notificările pe acest telefon.</span>' +
+        '<button class="btn sand small" data-action="adm-push-on">🔔 Activează</button><button class="ib-close" data-action="adm-push-banner-off" aria-label="Închide">×</button></div>';
+    }
     if (d === 'desktop' || standalone() || off || MC.adm.tab === 'cont') return '';
     var body;
     if (d === 'android') {
@@ -679,12 +685,70 @@ window.MC = window.MC || {};
     return '<div class="qr-box"><img src="img/qr-agenda.png" alt="Cod QR pentru agenda Medicenter" width="180" height="180">' +
       '<p>Scanează codul cu <b>camera telefonului</b>. Se deschide agenda, iar pe telefon apar pașii de instalare.</p></div>';
   }
+  /* ---------- notificări pe telefon (cereri noi) ---------- */
+  function pushAvailable() {
+    return MC.store.live && MC.CONFIG && MC.CONFIG.vapidPublicKey && MC.store.supports('push');
+  }
+  function b64ToU8(b64) {
+    var pad = '='.repeat((4 - b64.length % 4) % 4);
+    var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  /* 'on' | 'off' | 'denied' | 'need-install' (iPhone, din browser) | 'unsupported' */
+  MC.refreshPush = function () {
+    var before = MC.adm.push;
+    var done = function (st) { MC.adm.push = st; if (st !== before && document.body.classList.contains('is-admin')) MC.render(); };
+    if (!pushAvailable()) return done('unsupported');
+    if (device() === 'ios' && !standalone()) return done('need-install');
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return done('unsupported');
+    if (Notification.permission === 'denied') return done('denied');
+    navigator.serviceWorker.getRegistration().then(function (reg) {
+      return reg ? reg.pushManager.getSubscription() : null;
+    }).then(function (sub) { done(sub ? 'on' : 'off'); }, function () { done('off'); });
+  };
+  function pushOn() {
+    if (!('Notification' in window)) return Promise.reject(new Error('Telefonul nu permite notificări din browser.'));
+    return Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') throw new Error('Notificările nu au fost permise. Le poți activa din setările telefonului.');
+      return navigator.serviceWorker.register('sw.js').then(function () { return navigator.serviceWorker.ready; });
+    }).then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (old) {
+        return old || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(MC.CONFIG.vapidPublicKey) });
+      }).then(function (sub) {
+        return MC.store.savePush(sub.toJSON()).then(function () {
+          reg.showNotification('Notificările sunt active', { body: 'Vei primi aici fiecare cerere nouă de programare.', icon: 'img/icon-192.png', tag: 'medicenter-test' });
+        });
+      });
+    });
+  }
+  function pushOff() {
+    return navigator.serviceWorker.getRegistration().then(function (reg) { return reg && reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (!sub) return;
+      var ep = sub.endpoint;
+      return sub.unsubscribe().then(function () { return MC.store.removePush(ep); });
+    });
+  }
+  function pushCard() {
+    if (!pushAvailable()) return '';
+    var st = MC.adm.push;
+    var body = st === 'on' ? '<p class="info-box ok">Notificările sunt active pe acest dispozitiv: primești un mesaj la fiecare cerere nouă de pe site.</p>' +
+        '<button class="btn ghost" data-action="adm-push-off">Oprește notificările aici</button>'
+      : st === 'need-install' ? '<p class="info-box">Pe iPhone, notificările merg doar din <b>aplicația Agenda</b> pusă pe ecran (pașii de mai sus). Deschide-o de acolo și revino aici.</p>'
+      : st === 'denied' ? '<p class="info-box warn">Notificările sunt blocate pentru acest site. Le permiți din setările telefonului (Notificări → browserul sau Agenda), apoi revii aici.</p>'
+      : st === 'unsupported' ? '<p class="muted">Acest browser nu primește notificări. Pe Android folosește Chrome, pe iPhone aplicația Agenda de pe ecran.</p>'
+      : '<p class="muted">Primești un mesaj pe telefon la fiecare cerere nouă de programare, chiar dacă agenda e închisă. Fără numele pacientului.</p>' +
+        '<button class="btn primary big-install" data-action="adm-push-on">🔔 Activează notificările</button>';
+    return '<div class="card form"><h3>Notificări pentru cererile noi</h3>' + body + '</div>';
+  }
+
   function account() {
     return shell('<div class="adm-settings wrap">' +
       '<div class="card form install-card">' +
         '<h1 class="adm-title">Agenda pe telefon</h1>' + installHelp() +
         '<p class="muted small">Pe ecran apare iconița <b>Agenda</b>. Se deschide ca o aplicație și rămâi conectat.</p>' +
-      '</div>' +
+      '</div>' + pushCard() +
       '<form class="card form" id="adm-pass-form" novalidate>' +
         '<h3>Schimbă parola</h3>' +
         '<p class="muted small">Contul: ' + MC.esc(MC.store.email() || '') + '. Dacă folosiți un cont comun, după schimbare anunță colegii parola nouă.</p>' +
@@ -700,6 +764,7 @@ window.MC = window.MC || {};
   MC.pages.admin = function () {
     document.body.classList.add('is-admin');
     if (!MC.store.role() || MC.store.isRecovery()) return login();
+    if (MC.adm.push == null) { MC.adm.push = 'checking'; setTimeout(MC.refreshPush, 0); }
     if (MC.adm.tab === 'setari' && MC.store.role() === 'admin') return settings();
     if (MC.adm.tab === 'cont') return account();
     return agenda();
@@ -751,6 +816,16 @@ window.MC = window.MC || {};
     'adm-open-day': function (el) {
       var d = el.dataset.date;
       run(setDay(d, null), MC.cap(MC.fmtDate(d)) + ' este din nou deschisă.', 'caps-error').then(MC.render, function () {});
+    },
+    'adm-push-on': function () {
+      run(pushOn(), 'Notificările sunt active pe acest telefon.', null).then(function () { MC.adm.push = 'on'; MC.render(); }, function () { MC.refreshPush(); });
+    },
+    'adm-push-off': function () {
+      run(pushOff(), 'Notificările au fost oprite pe acest dispozitiv.', null).then(function () { MC.adm.push = 'off'; MC.render(); }, function () {});
+    },
+    'adm-push-banner-off': function () {
+      try { localStorage.setItem('medicenter-push-banner-off', '1'); } catch (e) { /* opțional */ }
+      MC.render();
     },
     'adm-banner-off': function () {
       try { localStorage.setItem('medicenter-banner-off', '1'); } catch (e) { /* opțional */ }

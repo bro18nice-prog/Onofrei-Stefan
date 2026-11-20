@@ -63,7 +63,7 @@ window.MC = window.MC || {};
   var state = {
     settings: withDefaults({}),
     bookings: [],
-    features: { caps: true, therapist: true }, // false cât timp baza de date nu are încă tabelele noi
+    features: { caps: true, therapist: true, push: true }, // false cât timp baza de date nu are încă tabelele noi
     slotCaps: [],     // locuri setate manual: { date, hour, cat ('*' = toată clinica), cap }
     loaded: null,     // { from, to } interval încărcat
     role: null,       // 'admin' | 'staff' | null
@@ -223,6 +223,8 @@ window.MC = window.MC || {};
         var b = find(id); if (b) Object.assign(b, f);
         save(); return Promise.resolve();
       },
+      savePush: function () { return Promise.resolve(); },
+      removePush: function () { return Promise.resolve(); },
       add: function (data) {
         var svc = MC.serviceById(data.serviceId);
         var staff = data.source === 'clinica';
@@ -342,10 +344,11 @@ window.MC = window.MC || {};
         : sb.rpc('get_availability', { p_from: range.from, p_to: range.to });
       var caps = sb.from('slot_caps').select('date,hour,cat,cap').gte('date', range.from).lte('date', range.to);
       var probe = state.role ? sb.from('bookings').select('therapist').limit(1) : Promise.resolve({ error: null });
-      return Promise.all([q, caps, probe]).then(function (all) {
+      var probePush = state.role ? sb.from('push_subscriptions').select('endpoint').limit(1) : Promise.resolve({ error: null });
+      return Promise.all([q, caps, probe, probePush]).then(function (all) {
         var res = all[0], rc = all[1];
         if (res.error) throw res.error;
-        state.features = { caps: !rc.error, therapist: !all[2].error };
+        state.features = { caps: !rc.error, therapist: !all[2].error, push: !all[3].error };
         state.bookings = (res.data || []).map(fromRow);
         // dacă tabelul nu există încă (baza neactualizată), site-ul merge mai departe fără locuri manuale
         state.slotCaps = rc.error ? [] : (rc.data || []).map(function (c) { return { date: c.date, hour: +c.hour, cat: c.cat, cap: +c.cap }; });
@@ -384,6 +387,14 @@ window.MC = window.MC || {};
           if (res.error) return fail(res.error);
           var b = local(id); if (b) b.therapist = name || '';
         });
+      },
+      savePush: function (sub) {
+        var k = sub.keys || {};
+        return sb.from('push_subscriptions').upsert({ endpoint: sub.endpoint, p256dh: k.p256dh, auth: k.auth, email: state.email || '' })
+          .then(function (res) { if (res.error) return fail(res.error); });
+      },
+      removePush: function (endpoint) {
+        return sb.from('push_subscriptions').delete().eq('endpoint', endpoint).then(function (res) { if (res.error) return fail(res.error); });
       },
       updateBooking: function (id, f) {
         return sb.from('bookings').update({ name: f.name, phone: f.phone, child_name: f.childName, child_age: f.childAge, note: f.note,
@@ -532,6 +543,8 @@ window.MC = window.MC || {};
     setSlotCap: impl.setSlotCap,
     setTherapist: impl.setTherapist,
     updateBooking: impl.updateBooking,
+    savePush: impl.savePush,
+    removePush: impl.removePush,
     evalFor: evalFor,
     forNewPatients: forNewPatients,
     mine: mine,
