@@ -196,7 +196,7 @@ MC.TEAM = [
   { group: 'medici', name: 'Dr. Stroiștean-Spatariu Paula Bianca', role: 'Medic primar Psihiatrie', photo: 'img/echipa/stroistean-spatariu-paula-bianca.jpg', book: 'n03',
     bio: ['Cu pregătire și experiență profesională în domeniul psihiatriei, Dr. Stroiștean-Spatariu Paula Bianca este dedicată evaluării, diagnosticării și tratamentului afecțiunilor de sănătate mintală la adulți.',
       'Abordarea medicală urmărește înțelegerea particularităților fiecărui pacient și stabilirea unor soluții terapeutice individualizate, cu respectarea principiilor de confidențialitate și profesionalism.'] },
-  { group: 'fizio', name: 'Pintilie Paul Bogdan', role: 'Fizioterapeut · Terapia Schroth & Reeducare Posturală Globală', photo: '', book: '',
+  { group: 'fizio', name: 'Pintilie Paul Bogdan', role: 'Fizioterapeut · Terapia Schroth & Reeducare Posturală Globală', photo: 'img/echipa/pintilie-paul-bogdan.jpg', book: '',
     bio: ['Cu pregătire în Terapia Schroth și Reeducare Posturală Globală (RPG), Bogdan este dedicat evaluării și corectării dezechilibrelor posturale, precum și recuperării funcționalității aparatului locomotor.',
       'Prin tehnici terapeutice specifice și programe individualizate, urmărește îmbunătățirea posturii, mobilității și calității vieții pacienților.'] },
   { group: 'fizio', name: 'Pintilie Andreea Maria', role: 'Fizioterapeut · Recuperare specializată · Certificări internaționale în Neurofeedback și BrainMap', photo: 'img/echipa/pintilie-andreea.jpg', book: '',
