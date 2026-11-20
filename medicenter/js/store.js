@@ -218,6 +218,10 @@ window.MC = window.MC || {};
         var b = find(id); if (b) b.therapist = name || '';
         save(); return Promise.resolve();
       },
+      updateBooking: function (id, f) {
+        var b = find(id); if (b) Object.assign(b, f);
+        save(); return Promise.resolve();
+      },
       add: function (data) {
         var svc = MC.serviceById(data.serviceId);
         var staff = data.source === 'clinica';
@@ -378,6 +382,13 @@ window.MC = window.MC || {};
           var b = local(id); if (b) b.therapist = name || '';
         });
       },
+      updateBooking: function (id, f) {
+        return sb.from('bookings').update({ name: f.name, phone: f.phone, child_name: f.childName, child_age: f.childAge, note: f.note,
+          updated_at: new Date().toISOString() }).eq('id', id).then(function (res) {
+          if (res.error) return fail(res.error);
+          var b = local(id); if (b) Object.assign(b, f);
+        });
+      },
       add: function (data) {
         var svc = MC.serviceById(data.serviceId);
         var staff = data.source === 'clinica';
@@ -516,6 +527,7 @@ window.MC = window.MC || {};
     countWhere: countWhere,
     setSlotCap: impl.setSlotCap,
     setTherapist: impl.setTherapist,
+    updateBooking: impl.updateBooking,
     evalFor: evalFor,
     forNewPatients: forNewPatients,
     mine: mine,

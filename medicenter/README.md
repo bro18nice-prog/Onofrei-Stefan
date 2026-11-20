@@ -108,11 +108,18 @@ Apare iconița **Agenda**, care se deschide direct în agendă, pe tot ecranul. 
 - Din lista de sus se alege o secție ca să se vadă ocuparea: **verde** = locuri libere, **portocaliu** = aproape plin, **roșu** = complet (ex. `3/4`).
 - ‹ › schimbă săptămâna, **Azi** revine la săptămâna curentă. Pe telefon se vede o zi, aleasă din butoanele de sus.
 
-### Mutare, anulare, adăugare
-- **Mutare pe calculator:** se trage pacientul în altă oră (verde = se poate, roșu = plin).
-- **Mutare pe telefon:** se apasă pe pacient → **Mută programarea** → ziua și ora → **Mută**.
-- **Anulare:** pacientul → **Anulează programarea** → **Da, anulează**. Locul se eliberează imediat.
-- **Pacient care a sunat:** se apasă pe o oră goală sau pe **+ Programare**.
+### Totul se face din butoane
+**Apeși pe o programare** → în dreapta (pe telefon, dedesubt) apar butoanele:
+- **Confirmă** / **Refuză** / **Altă oră** (pentru cererile noi de pe site);
+- **Mută** (alegi ziua și ora; pe calculator poți și trage programarea), **Modifică datele** (nume, telefon, copil, observații),
+  **WhatsApp** (mesajul către pacient e deja scris), **Sună**, **Anulează** (cere confirmare), **Reactivează** (pentru una anulată);
+- câmpul **Terapeut**, pentru cine lucrează cu pacientul.
+
+**Apeși pe o oră** (pe spațiul liber) → butoanele:
+- **Programare nouă** (pacient care a sunat; intră direct confirmată);
+- **Blochează ora** / **Deblochează ora** — pacienții nu o mai pot alege online;
+- **Locuri la ora asta** — câți pacienți încap atunci (pe toată clinica sau pe secție);
+- **Blochează ziua** / **Deblochează ziua** — toată ziua.
 
 ### Locuri pe oră, zile închise, terapeut
 - **Câte locuri sunt la o oră:** apeși pe ora din agendă → sus în dreapta, „Locuri la ora …”: pe toată clinica sau pe secție.

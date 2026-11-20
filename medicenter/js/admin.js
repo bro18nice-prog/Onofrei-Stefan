@@ -133,6 +133,28 @@ window.MC = window.MC || {};
 
   /* ---------- agenda ---------- */
 
+  var I = {
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    unlock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>',
+    day: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9.5 14.5l5 5M14.5 14.5l-5 5"/></svg>',
+    dayok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 16l2 2 4-4"/></svg>',
+    seats: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c3 0 6 1.8 6 5.5"/></svg>',
+    move: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15h6M13 13l2 2-2 2"/></svg>',
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+    redo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1.5-4A8 8 0 1 1 9 19.5L4 20z"/></svg>'
+  };
+  /* Un buton mare din grila de acțiuni. */
+  function act(icon, label, attrs, cls) {
+    return '<button type="button" class="act ' + (cls || '') + '" ' + attrs + '>' + icon + '<span>' + label + '</span></button>';
+  }
+  function actLink(icon, label, href, cls) {
+    return '<a class="act ' + (cls || '') + '" href="' + MC.esc(href) + '"' + (/^https/.test(href) ? ' target="_blank" rel="noopener"' : '') + '>' + icon + '<span>' + label + '</span></a>';
+  }
+
   var STATUS_LABEL = { pending: 'în așteptare', confirmed: 'confirmată', rejected: 'refuzată', cancelled: 'anulată' };
 
   function agenda() {
@@ -169,7 +191,7 @@ window.MC = window.MC || {};
       return '<span><i style="background:' + c.color + '"></i>' + c.short + '</span>';
     }).join('') +
       '<span class="lg-pending">în așteptare</span>' +
-      '<span class="cap-info">Apasă pe o oră ca să schimbi câte locuri sunt atunci</span>' +
+      '<span class="cap-info">Apasă pe o programare sau pe o oră: apar butoanele cu tot ce poți face</span>' +
       '</div>';
 
     var dayTabs = narrow() ? '<div class="day-tabs">' + days.map(function (d, i) {
@@ -218,7 +240,7 @@ window.MC = window.MC || {};
       var lbl = set.length === 1 ? set[0].short + ' ' + (MC.store.slotCap(date, hour, set[0].id) === 0 ? 'închis' : 'max ' + MC.store.slotCap(date, hour, set[0].id)) : 'locuri setate';
       badge = '<span class="cnt capo" title="locuri setate pe secții">' + lbl + '</span>' + badge;
     }
-    var sel = a.panel.mode === 'new' && a.panel.date === date && a.panel.hour === hour;
+    var sel = (a.panel.mode === 'new' || a.panel.mode === 'slot') && a.panel.date === date && a.panel.hour === hour;
     var html = '<div class="ag-cell' + (past ? ' past' : '') + (sel ? ' picked' : '') + (capM === 0 ? ' closed' : '') +
       '" data-cell="1" data-date="' + date + '" data-hour="' + hour + '"><div class="cell-top">' + badge + '</div>';
     list.forEach(function (b) {
@@ -292,19 +314,42 @@ window.MC = window.MC || {};
         '<small>' + used + ' ocupate</small></label>' +
         '<input type="number" min="0" max="50" inputmode="numeric" id="cap-' + (c.id === '*' ? 'all' : c.id) + '-h" data-cat="' + c.id + '" placeholder="normal" value="' + (v == null ? '' : v) + '"></div>';
     }).join('');
-    return '<form class="card form caps-card" id="adm-caps" data-date="' + date + '" data-hour="' + hour + '" novalidate>' +
+    return '<form class="form sub-form caps-card" id="adm-caps" data-date="' + date + '" data-hour="' + hour + '" novalidate>' +
       '<h3>Locuri la ora ' + MC.hourLabel(hour) + ', ' + MC.fmtDate(date) + '</h3>' +
       '<p class="muted small">Gol = normal (după Setări). 0 = închis la ora asta. Pacienții văd online doar orele cu locuri.</p>' + rowsH +
       '<p class="form-error" id="caps-error" role="alert" hidden></p>' +
       '<button class="btn primary block" type="submit">Salvează locurile</button>' +
-      '<div class="day-close">' + (dayClosed(date)
-        ? '<p class="muted small"><b>Toată ziua este închisă</b> pentru programări online.</p><button type="button" class="btn soft block" data-action="adm-open-day" data-date="' + date + '">Redeschide ziua</button>'
-        : '<button type="button" class="btn danger-ghost block" data-action="adm-close-day" data-date="' + date + '">Închide toată ziua (' + MC.fmtDate(date) + ')</button>') +
-      '</div></form>';
+      '<button type="button" class="btn ghost block" data-action="adm-cancel-no">Renunță</button></form>';
+  }
+
+  /* Click pe o oră: butoane pentru programare nouă, blocare oră/zi și locuri. */
+  function panelSlot() {
+    var p = MC.adm.panel, date = p.date, hour = p.hour, sub = MC.adm.confirm;
+    var used = MC.store.countWhere(date, hour, null, null);
+    var all = MC.store.slotCap(date, hour, '*');
+    var shutDay = dayClosed(date);
+    var cats = MC.CATS.filter(function (c) { return MC.store.slotCap(date, hour, c.id) != null; });
+    var state = shutDay ? 'Toată ziua este blocată pentru programări online.'
+      : all === 0 ? 'Ora este blocată pentru programări online.'
+      : all != null ? 'Maximum ' + all + ' pacienți la ora asta (toată clinica).'
+      : cats.length ? 'Locuri setate: ' + cats.map(function (c) { var v = MC.store.slotCap(date, hour, c.id); return c.short + ' ' + (v === 0 ? 'închis' : v); }).join(', ') + '.'
+      : 'Locuri normale (după Setări).';
+    var on = function (k) { return sub === k ? ' on' : ''; };
+    var grid = act(I.plus, 'Programare nouă', 'data-action="adm-sub" data-sub="add"', 'ok' + on('add')) +
+      (all === 0 ? act(I.unlock, 'Deblochează ora', 'data-action="adm-block-hour" data-v=""') : act(I.lock, 'Blochează ora', 'data-action="adm-block-hour" data-v="0"', 'bad')) +
+      act(I.seats, 'Locuri la ora asta', 'data-action="adm-sub" data-sub="caps"', on('caps')) +
+      (shutDay ? act(I.dayok, 'Deblochează ziua', 'data-action="adm-open-day" data-date="' + date + '"') : act(I.day, 'Blochează ziua', 'data-action="adm-close-day" data-date="' + date + '"', 'bad'));
+    var form = sub === 'add' ? addForm(date, hour) : sub === 'caps' ? capsCard(date, hour) : '';
+    return '<div class="card"><div class="panel-head"><h2 class="card-title">' + MC.cap(MC.fmtDate(date)) + ', ora ' + MC.hourLabel(hour) + '</h2>' +
+      '<button class="icon-btn" data-action="adm-close" aria-label="Închide">×</button></div>' +
+      '<p class="slot-state' + (shutDay || all === 0 ? ' shut' : '') + '">' + state + '<br><span class="muted small">' + used + (used === 1 ? ' programare' : ' programări') + ' la ora asta</span></p>' +
+      '<h3 class="act-title">Ce vrei să faci?</h3><div class="act-grid">' + grid + '</div>' +
+      '<p class="form-error" id="slot-error" role="alert" hidden></p>' + form + '</div>';
   }
 
   function panel() {
     var p = MC.adm.panel;
+    if (p.mode === 'slot') return panelSlot();
     if (p.mode === 'booking') return panelBooking(MC.store.get(p.id));
     if (p.mode === 'new') return panelNew();
     if (p.mode === 'requests') return panelRequests();
@@ -389,22 +434,49 @@ window.MC = window.MC || {};
     var ev = MC.store.evalFor(b.serviceId);
     var hasPhone = MC.validPhone(b.phone);
 
-    var actions = '';
+    var sub = cfm;
+    var on = function (k) { return sub === k ? ' on' : ''; };
+    var grid = '';
     if (pending) {
-      actions = cfm === 'reject'
-        ? '<form class="form" id="adm-reject" novalidate><label for="rj-note">Motivul (îl vede pacientul)</label>' +
-          '<input id="rj-note" maxlength="200" placeholder="ex.: ora e ocupată, vă rugăm sunați-ne">' +
-          '<div class="row2"><button class="btn danger" type="submit">Refuză cererea</button><button class="btn ghost" type="button" data-action="adm-cancel-no">Înapoi</button></div></form>'
-        : '<div class="row2"><button class="btn ok" data-action="adm-confirm">' + MC.ICONS.check + 'Confirmă</button>' +
-          '<button class="btn danger-ghost" data-action="adm-reject">Refuză</button></div>';
+      grid += act(MC.ICONS.check, 'Confirmă', 'data-action="adm-confirm"', 'ok') +
+        act(I.x, 'Refuză', 'data-action="adm-sub" data-sub="reject"', 'bad' + on('reject')) +
+        act(I.move, 'Altă oră', 'data-action="adm-sub" data-sub="move"', on('move'));
     } else if (activeB) {
-      actions = cfm === 'cancel'
-        ? '<p><b>Anulezi programarea?</b><br><span class="muted small">Locul devine liber pentru alți pacienți.</span></p>' +
-          '<div class="row2"><button class="btn danger" data-action="adm-cancel-yes">Da, anulează</button><button class="btn ghost" data-action="adm-cancel-no">Nu</button></div>'
-        : '<button class="btn danger-ghost block" data-action="adm-cancel">Anulează programarea</button>';
+      grid += act(I.move, 'Mută', 'data-action="adm-sub" data-sub="move"', on('move'));
     } else {
-      actions = '<button class="btn soft block" data-action="adm-reactivate">Reactivează (confirmă din nou)</button>';
+      grid += act(I.redo, 'Reactivează', 'data-action="adm-reactivate"', 'ok');
     }
+    grid += act(I.edit, 'Modifică datele', 'data-action="adm-sub" data-sub="edit"', on('edit'));
+    if (hasPhone) grid += actLink(I.chat, 'WhatsApp', waLink(b.phone, patientMessage(b)), 'wa') + actLink(MC.ICONS.phone, 'Sună', 'tel:' + b.phone.replace(/\s/g, ''));
+    if (activeB && !pending) grid += act(I.trash, 'Anulează', 'data-action="adm-sub" data-sub="cancel"', 'bad' + on('cancel'));
+
+    var form = '';
+    if (sub === 'reject') {
+      form = '<form class="form sub-form" id="adm-reject" novalidate><h3>Refuzi cererea?</h3><label for="rj-note">Motivul (îl vede pacientul)</label>' +
+        '<input id="rj-note" maxlength="200" placeholder="ex.: ora e ocupată, vă rugăm sunați-ne">' +
+        '<div class="row2"><button class="btn danger" type="submit">Da, refuză</button><button class="btn ghost" type="button" data-action="adm-cancel-no">Renunță</button></div></form>';
+    } else if (sub === 'cancel') {
+      form = '<div class="sub-form"><h3>Anulezi programarea?</h3><p class="muted small">Locul devine liber pentru alți pacienți. Anunță apoi pacientul pe WhatsApp.</p>' +
+        '<div class="row2"><button class="btn danger" data-action="adm-cancel-yes">Da, anulează</button><button class="btn ghost" data-action="adm-cancel-no">Renunță</button></div></div>';
+    } else if (sub === 'move') {
+      form = '<form class="form sub-form" id="adm-move" novalidate><h3>' + (pending ? 'Propune altă oră (și confirmă)' : 'Mută programarea') + '</h3>' +
+        '<div class="row2"><div><label for="mv-date">Ziua</label><input type="date" id="mv-date" value="' + b.date + '" required></div>' +
+        '<div><label for="mv-hour">Ora</label><select id="mv-hour">' + hourOptions(b.hour) + '</select></div></div>' +
+        '<p class="form-error" id="mv-error" role="alert" hidden></p>' +
+        '<div class="row2"><button class="btn primary" type="submit">' + (pending ? 'Mută și confirmă' : 'Mută') + '</button><button class="btn ghost" type="button" data-action="adm-cancel-no">Renunță</button></div>' +
+        '<p class="muted small">Pe calculator poți și trage programarea direct în altă oră.</p></form>';
+    } else if (sub === 'edit') {
+      form = '<form class="form sub-form" id="adm-edit" novalidate><h3>Modifică datele</h3>' +
+        '<label for="ed-name">Nume și prenume' + (b.childName ? ' (părintele)' : '') + '</label><input id="ed-name" maxlength="120" value="' + MC.esc(b.name) + '">' +
+        '<label for="ed-phone">Telefon</label><input id="ed-phone" type="tel" inputmode="tel" maxlength="40" value="' + MC.esc(b.phone) + '">' +
+        '<div class="row2"><div><label for="ed-child">Copil (opțional)</label><input id="ed-child" maxlength="120" value="' + MC.esc(b.childName || '') + '"></div>' +
+        '<div><label for="ed-age">Vârsta copilului</label><input id="ed-age" type="number" min="0" max="17" value="' + (b.childAge == null ? '' : b.childAge) + '"></div></div>' +
+        '<label for="ed-note">Observații</label><textarea id="ed-note" rows="2" maxlength="500">' + MC.esc(b.note || '') + '</textarea>' +
+        '<p class="form-error" id="ed-error" role="alert" hidden></p>' +
+        '<div class="row2"><button class="btn primary" type="submit">Salvează</button><button class="btn ghost" type="button" data-action="adm-cancel-no">Renunță</button></div>' +
+        '<p class="muted small">Pentru alt serviciu: anulează și adaugă o programare nouă.</p></form>';
+    }
+    var actions = '<div class="card"><h3 class="act-title">Ce vrei să faci?</h3><div class="act-grid">' + grid + '</div>' + form + '</div>';
 
     return '<div class="card"><div class="panel-head"><h2 class="card-title">' + MC.esc(b.childName || b.name) + '</h2>' +
       '<button class="icon-btn" data-action="adm-close" aria-label="Închide">×</button></div>' +
@@ -425,16 +497,7 @@ window.MC = window.MC || {};
       (b.staffNote ? '<div class="note-box"><b>Mesaj către pacient:</b> ' + MC.esc(b.staffNote) + '</div>' : '') +
       '<div id="history-box" class="history"></div>' +
       '</div>' +
-      '<div class="card">' + actions +
-        (hasPhone ? '<a class="btn wa block" href="' + MC.esc(waLink(b.phone, patientMessage(b))) + '" target="_blank" rel="noopener">' +
-          'Trimite pe WhatsApp: ' + (pending ? 'cerere primită' : STATUS_LABEL[b.status || 'confirmed']) + '</a>' : '') +
-      '</div>' +
-      (activeB ? '<form class="card form" id="adm-move" novalidate><h3>' + (pending ? 'Propune altă oră' : 'Mută programarea') + '</h3>' +
-        '<div class="row2"><div><label for="mv-date">Ziua</label><input type="date" id="mv-date" value="' + b.date + '" required></div>' +
-        '<div><label for="mv-hour">Ora</label><select id="mv-hour">' + hourOptions(b.hour) + '</select></div></div>' +
-        '<p class="form-error" id="mv-error" role="alert" hidden></p>' +
-        '<button class="btn primary block" type="submit">' + (pending ? 'Mută și confirmă' : 'Mută') + '</button>' +
-      '</form>' : '');
+      actions;
   }
 
   /* Istoricul pacientului după telefon: vizite anterioare și dacă a făcut evaluarea. */
@@ -461,12 +524,27 @@ window.MC = window.MC || {};
     }, function () {});
   }
 
+  function addForm(date, hour) {
+    var firstOfCat = MC.catById(MC.adm.filter) ? MC.SERVICES.find(function (s) { return s.cat === MC.adm.filter; }).id : 'k01';
+    return '<form class="form sub-form" id="adm-add" novalidate><h3>Programare nouă (confirmată)</h3>' +
+      '<label for="ad-svc">Serviciu</label><select id="ad-svc" required>' + serviceOptions(firstOfCat) + '</select>' +
+      '<div class="row2"><div><label for="ad-date">Ziua</label><input type="date" id="ad-date" value="' + date + '" required></div>' +
+      '<div><label for="ad-hour">Ora</label><select id="ad-hour">' + hourOptions(hour) + '</select></div></div>' +
+      '<label for="ad-name">Nume și prenume (părintele, pentru copii)</label><input id="ad-name" required>' +
+      '<div class="row2"><div><label for="ad-child">Copil (opțional)</label><input id="ad-child" maxlength="120"></div>' +
+      '<div><label for="ad-age">Vârsta copilului</label><input id="ad-age" type="number" min="0" max="17"></div></div>' +
+      '<label for="ad-phone">Telefon</label><input id="ad-phone" type="tel" inputmode="tel" placeholder="07xx xxx xxx">' +
+      '<label for="ad-ther">Terapeut</label><select id="ad-ther">' + therapistOptions(MC.adm.filter.indexOf('t:') === 0 ? MC.adm.filter.slice(2) : '') + '</select>' +
+      '<label for="ad-note">Observații</label><textarea id="ad-note" rows="2"></textarea>' +
+      '<p class="form-error" id="ad-error" role="alert" hidden></p>' +
+      '<div class="row2"><button class="btn primary" type="submit">Adaugă în agendă</button><button class="btn ghost" type="button" data-action="adm-cancel-no">Renunță</button></div></form>';
+  }
+
   function panelNew() {
     var p = MC.adm.panel;
     var date = p.date || MC.ymd(MC.today());
     var firstOfCat = MC.catById(MC.adm.filter) ? MC.SERVICES.find(function (s) { return s.cat === MC.adm.filter; }).id : 'k01';
-    return (p.fromCell ? capsCard(date, p.hour) : '') +
-      '<form class="card form" id="adm-add" novalidate><div class="panel-head"><h2 class="card-title">Programare nouă</h2>' +
+    return '<form class="card form" id="adm-add" novalidate><div class="panel-head"><h2 class="card-title">Programare nouă</h2>' +
       '<button type="button" class="icon-btn" data-action="adm-close" aria-label="Închide">×</button></div>' +
       '<label for="ad-svc">Serviciu</label><select id="ad-svc" required>' + serviceOptions(p.serviceId || firstOfCat) + '</select>' +
       '<div class="row2"><div><label for="ad-date">Ziua</label><input type="date" id="ad-date" value="' + date + '" required></div>' +
@@ -636,7 +714,7 @@ window.MC = window.MC || {};
     return run(MC.store.move(id, date, hour, confirm), (b.childName || b.name) + ' a fost mutat(ă) ' + MC.fmtDate(date) + ', ora ' + MC.hourLabel(hour) +
         (confirm ? ' și confirmat(ă). Trimite mesajul pe WhatsApp.' : '.'), errId)
       .then(function () {
-        MC.adm.panel = { mode: 'booking', id: id };
+        MC.adm.panel = { mode: 'booking', id: id }; MC.adm.confirm = null;
         if (date < MC.ymd(MC.adm.week) || date > MC.ymd(MC.addDays(MC.adm.week, 6))) MC.adm.week = MC.weekStart(MC.parseYmd(date));
         MC.render(); loadHistory(b);
       }, function () {
@@ -652,6 +730,17 @@ window.MC = window.MC || {};
 
   MC.adminActions = {
     'adm-tab': function (el) { MC.adm.tab = el.dataset.tab; MC.adm.confirm = null; MC.render(); },
+    'adm-sub': function (el) {
+      MC.adm.confirm = MC.adm.confirm === el.dataset.sub ? null : el.dataset.sub;
+      MC.render();
+      var f = document.querySelector('#adm-panel .sub-form');
+      if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); var i = f.querySelector('input,select,textarea'); if (i && !narrow()) i.focus(); }
+    },
+    'adm-block-hour': function (el) {
+      var p = MC.adm.panel, v = el.dataset.v === '' ? null : 0;
+      run(MC.store.setSlotCap(p.date, p.hour, '*', v), v === 0 ? 'Ora ' + MC.hourLabel(p.hour) + ' este blocată pentru programări online.' : 'Ora ' + MC.hourLabel(p.hour) + ' este din nou liberă.', 'slot-error')
+        .then(MC.render, function () {});
+    },
     'adm-close-day': function (el) {
       var d = el.dataset.date;
       var left = MC.store.bookingsOn(d).length;
@@ -727,7 +816,7 @@ window.MC = window.MC || {};
 
   /* Click pe spațiul liber al unei ore = programare nouă în acea oră. */
   MC.adminCellClick = function (cellEl) {
-    MC.adm.panel = { mode: 'new', date: cellEl.dataset.date, hour: +cellEl.dataset.hour, fromCell: true };
+    MC.adm.panel = { mode: 'slot', date: cellEl.dataset.date, hour: +cellEl.dataset.hour };
     MC.adm.confirm = null;
     MC.render();
     focusPanel();
@@ -806,6 +895,15 @@ window.MC = window.MC || {};
       }, function () {});
       return true;
     }
+    if (form.id === 'adm-edit') {
+      var eb = MC.store.get(MC.adm.panel.id);
+      var en = val('ed-name').trim(), ep = val('ed-phone').trim(), ec = val('ed-child').trim(), ea = val('ed-age');
+      if (en.length < 2) { showErr('ed-error', 'Scrie numele pacientului.'); return true; }
+      if (ep && ep !== '—' && !MC.validPhone(ep)) { showErr('ed-error', 'Numărul de telefon nu pare corect.'); return true; }
+      var fields = { name: en, phone: ep || '—', childName: ec, childAge: ec && ea !== '' ? Math.max(0, Math.min(17, +ea)) : null, note: val('ed-note').trim() };
+      run(MC.store.updateBooking(eb.id, fields), 'Datele au fost salvate.', 'ed-error').then(function () { MC.adm.confirm = null; MC.render(); loadHistory(eb); }, function () {});
+      return true;
+    }
     if (form.id === 'adm-caps') {
       var cd = form.dataset.date, ch = +form.dataset.hour;
       var jobs = [];
@@ -837,7 +935,7 @@ window.MC = window.MC || {};
           return ther ? MC.store.setTherapist(b.id, ther).then(function () { return b; }) : b;
         }), name.trim() + ' a fost adăugat(ă) în agendă.', 'ad-error');
       }).then(function (b) {
-        MC.adm.panel = { mode: 'booking', id: b.id };
+        MC.adm.panel = { mode: 'booking', id: b.id }; MC.adm.confirm = null;
         gotoWeek(MC.weekStart(MC.parseYmd(date)));
       }, function () {});
       return true;
