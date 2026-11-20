@@ -180,7 +180,9 @@ window.MC = window.MC || {};
     var cols = 'grid-template-columns:56px repeat(' + shown.length + ', minmax(0,1fr))';
     var grid = '<div class="ag-scroll"><div class="ag" style="' + cols + '"><div class="ag-corner"></div>';
     shown.forEach(function (d) {
-      grid += '<div class="ag-day' + (MC.ymd(d) === todayYmd ? ' today' : '') + '">' + MC.DAYS_SHORT[d.getDay()] + '<b>' + d.getDate() + '</b></div>';
+      var shut = dayClosed(MC.ymd(d));
+      grid += '<div class="ag-day' + (MC.ymd(d) === todayYmd ? ' today' : '') + (shut ? ' shut' : '') + '">' + MC.DAYS_SHORT[d.getDay()] + '<b>' + d.getDate() + '</b>' +
+        (shut ? '<small>închis</small>' : '') + '</div>';
     });
     var now = new Date();
     for (var h = s.open; h < s.close; h++) {
@@ -264,6 +266,23 @@ window.MC = window.MC || {};
     }).join('');
   }
 
+  /* Ziua e închisă când toate orele au 0 locuri pe toată clinica. */
+  function dayClosed(date) {
+    var s = MC.store.settings();
+    for (var h = s.open; h < s.close; h++) if (MC.store.slotCap(date, h, '*') !== 0) return false;
+    return true;
+  }
+  function setDay(date, cap) {
+    var s = MC.store.settings();
+    var chain = Promise.resolve();
+    for (var h = s.open; h < s.close; h++) (function (hh) {
+      if (MC.store.slotCap(date, hh, '*') === cap) return;
+      if (cap == null && MC.store.slotCap(date, hh, '*') !== 0) return;
+      chain = chain.then(function () { return MC.store.setSlotCap(date, hh, '*', cap); });
+    })(h);
+    return chain;
+  }
+
   /* Câte locuri sunt la o anumită oră: setate manual pe secție sau pe toată clinica. */
   function capsCard(date, hour) {
     var rowsH = [{ id: '*', short: 'Toată clinica', color: '#50677a' }].concat(MC.CATS).map(function (c) {
@@ -277,7 +296,11 @@ window.MC = window.MC || {};
       '<h3>Locuri la ora ' + MC.hourLabel(hour) + ', ' + MC.fmtDate(date) + '</h3>' +
       '<p class="muted small">Gol = normal (după Setări). 0 = închis la ora asta. Pacienții văd online doar orele cu locuri.</p>' + rowsH +
       '<p class="form-error" id="caps-error" role="alert" hidden></p>' +
-      '<button class="btn primary block" type="submit">Salvează locurile</button></form>';
+      '<button class="btn primary block" type="submit">Salvează locurile</button>' +
+      '<div class="day-close">' + (dayClosed(date)
+        ? '<p class="muted small"><b>Toată ziua este închisă</b> pentru programări online.</p><button type="button" class="btn soft block" data-action="adm-open-day" data-date="' + date + '">Redeschide ziua</button>'
+        : '<button type="button" class="btn danger-ghost block" data-action="adm-close-day" data-date="' + date + '">Închide toată ziua (' + MC.fmtDate(date) + ')</button>') +
+      '</div></form>';
   }
 
   function panel() {
@@ -629,6 +652,16 @@ window.MC = window.MC || {};
 
   MC.adminActions = {
     'adm-tab': function (el) { MC.adm.tab = el.dataset.tab; MC.adm.confirm = null; MC.render(); },
+    'adm-close-day': function (el) {
+      var d = el.dataset.date;
+      var left = MC.store.bookingsOn(d).length;
+      run(setDay(d, 0), MC.cap(MC.fmtDate(d)) + ' este închisă pentru programări online.' +
+        (left ? ' Atenție: ' + left + (left === 1 ? ' programare rămâne' : ' programări rămân') + ' în agendă, mută-le sau anulează-le.' : ''), 'caps-error').then(MC.render, function () {});
+    },
+    'adm-open-day': function (el) {
+      var d = el.dataset.date;
+      run(setDay(d, null), MC.cap(MC.fmtDate(d)) + ' este din nou deschisă.', 'caps-error').then(MC.render, function () {});
+    },
     'adm-banner-off': function () {
       try { localStorage.setItem('medicenter-banner-off', '1'); } catch (e) { /* opțional */ }
       MC.render();

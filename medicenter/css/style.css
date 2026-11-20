@@ -807,3 +807,7 @@ body.busy .btn[type=submit], body.busy [data-action$="-yes"] { opacity: .6; poin
 .kv.kv-select { display: grid; gap: 6px; }
 .kv-select select { width: 100%; min-width: 0; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); font-weight: 600; }
 .caps-card { border: 1.5px solid #ecd3ae; }
+
+.day-close { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 8px; }
+.ag-day.shut { background: repeating-linear-gradient(135deg, #f6efe4 0 8px, #fbf7f0 8px 16px); }
+.ag-day small { display: block; font-size: 0.7rem; font-weight: 800; color: var(--sand-deep); text-transform: uppercase; letter-spacing: .08em; }

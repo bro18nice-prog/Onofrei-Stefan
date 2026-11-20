@@ -114,6 +114,14 @@ Apare iconița **Agenda**, care se deschide direct în agendă, pe tot ecranul. 
 - **Anulare:** pacientul → **Anulează programarea** → **Da, anulează**. Locul se eliberează imediat.
 - **Pacient care a sunat:** se apasă pe o oră goală sau pe **+ Programare**.
 
+### Locuri pe oră, zile închise, terapeut
+- **Câte locuri sunt la o oră:** apeși pe ora din agendă → sus în dreapta, „Locuri la ora …”: pe toată clinica sau pe secție.
+  Gol = normal (după Setări), 0 = închis la ora aceea. Ora primește eticheta „max N” sau „închis”.
+- **O zi întreagă închisă:** apeși pe orice oră din ziua respectivă → **Închide toată ziua**. Ziua apare hașurată, cu „ÎNCHIS”,
+  iar pacienții nu o mai pot alege. Programările deja făcute rămân în agendă (se mută sau se anulează). **Redeschide ziua** anulează închiderea.
+- Pe o oră închisă nu se pot adăuga programări nici din agendă; pentru o excepție, redeschizi ora.
+- **Terapeutul:** în fișa programării, câmpul **Terapeut**; numele scurt apare pe programare. Din lista de sus se poate vedea agenda unui singur terapeut.
+
 ### Setări (doar administratori)
 Câte locuri are fiecare terapie la aceeași oră (inițial 7 la toate: medicul așază pacienții la confirmare), programul, zilele lucrătoare, cu câte zile înainte se pot face programări, lista personalului.
 
