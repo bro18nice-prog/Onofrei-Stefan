@@ -27,11 +27,34 @@ MC.CATS = [
     blurb: 'Consultații și control, EEG, Brainmap și antrenament neuronal (neurofeedback).' }
 ];
 
+/* Secțiunile afișate pacienților (lista de prețuri, programare). Baza de date păstrează cele 4 secții de mai sus;
+   serviciile de neurologie și psihiatrie se împart aici în trei: neurologie pediatrică, psihiatrie, neurofeedback. */
+MC.SECTIONS = [
+  { id: 'kineto', name: 'Kinetoterapie și recuperare', short: 'Kinetoterapie', color: '#3a7cb8', icon: 'kineto', photo: 'rpg',
+    blurb: 'Kinetoterapie individuală și de grup, recuperare neurologică, reeducare posturală globală, Schroth, ATM și planșeu pelvin.' },
+  { id: 'masaj', name: 'Masaj și drenaj limfatic', short: 'Masaj', color: '#c0784e', icon: 'masaj',
+    blurb: 'Masaj terapeutic, reflexogen, prenatal, pentru bebeluși și drenaj limfatic.' },
+  { id: 'fizio', name: 'Fizioterapie', short: 'Fizioterapie', color: '#22978a', icon: 'fizio',
+    blurb: 'Curenți, laser, magnetoterapie, ultrasunete, Tecar și Deep Oscillation.' },
+  { id: 'neuroped', name: 'Neurologie pediatrică', short: 'Neurologie pediatrică', color: '#8761b5', icon: 'neuro', photo: 'eeg',
+    blurb: 'Consultație, control și EEG pentru copii și adolescenți.' },
+  { id: 'psih', name: 'Psihiatrie și psihiatrie pediatrică', short: 'Psihiatrie', color: '#b0567d', icon: 'mind',
+    blurb: 'Consultație și control pentru adulți, copii și adolescenți.' },
+  { id: 'nfb', name: 'Neurofeedback', short: 'Neurofeedback', color: '#4f6fd0', icon: 'brain', photo: 'neurofeedback',
+    blurb: 'Brainmap (scanare), ședințe de antrenament neuronal și pachete de 10 sau 20 de ședințe.' }
+];
+MC.SECTION_OF = { n01: 'neuroped', n04: 'neuroped', n12: 'neuroped', n13: 'neuroped', n02: 'psih', n03: 'psih', n14: 'psih',
+  n05: 'nfb', n06: 'nfb', n07: 'nfb', n08: 'nfb', n09: 'nfb', n10: 'nfb', n11: 'nfb' };
+MC.secOf = function (svc) { return MC.SECTION_OF[svc.id] || svc.cat; };
+MC.secById = function (id) { return MC.SECTIONS.find(function (c) { return c.id === id; }) || MC.SECTIONS[0]; };
+
 /* Iconițe desenate simplu (SVG), folosite pe carduri și în meniuri. */
 MC.ICONS = {
   kineto: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="27" cy="8" r="4"/><path d="M26 14l-5 12 8 6v11"/><path d="M21 26l-8 8"/><path d="M17 18l9-4 7 7 7-2"/></svg>',
   masaj: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 16c6-6 12 6 18 0s12 6 18 0"/><path d="M6 26c6-6 12 6 18 0s12 6 18 0"/><path d="M6 36c6-6 12 6 18 0s12 6 18 0"/></svg>',
   fizio: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M27 4L11 27h12l-3 17 17-24H25z"/></svg>',
+  mind: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M30 42v-7h4a3 3 0 0 0 3-3v-5l3-1-3-6c0-8-6-14-14-14S9 12 9 20c0 5 2 8 5 11v11"/><path d="M23 27c-3-2-6-4-6-7a3 3 0 0 1 6-1 3 3 0 0 1 6 1c0 3-3 5-6 7z"/></svg>',
+  brain: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 9v31"/><path d="M24 12a6 6 0 0 0-11-2 6 6 0 0 0-5 8 6 6 0 0 0 1 10 6 6 0 0 0 6 9 6 6 0 0 0 9 3"/><path d="M24 12a6 6 0 0 1 11-2 6 6 0 0 1 5 8 6 6 0 0 1-1 10 6 6 0 0 1-6 9 6 6 0 0 1-9 3"/><path d="M15 21h4M29 27h4"/></svg>',
   neuro: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 26h8l4-10 6 20 6-28 5 18h4l3-6 3 6h3"/></svg>',
   phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
@@ -94,7 +117,8 @@ MC.SERVICES = [
   { id: 'n01', cat: 'neuro', name: 'Consultație neurologie pediatrică', dur: 60, durLabel: '', price: '300 lei' },
   { id: 'n02', cat: 'neuro', name: 'Consultație psihiatrie pediatrică', dur: 60, durLabel: '', price: '300 lei' },
   { id: 'n03', cat: 'neuro', name: 'Consultație psihiatrie', dur: 60, durLabel: '', price: '300 lei' },
-  { id: 'n04', cat: 'neuro', name: 'Control', dur: 30, durLabel: '', price: '150 lei' },
+  { id: 'n04', cat: 'neuro', name: 'Control neurologie pediatrică', dur: 30, durLabel: '', price: '150 lei' },
+  { id: 'n14', cat: 'neuro', name: 'Control psihiatrie / psihiatrie pediatrică', dur: 30, durLabel: '', price: '150 lei' },
   { id: 'n12', cat: 'neuro', name: 'EEG (electroencefalogramă)', dur: 60, durLabel: '45–60 min', price: '500 lei' },
   { id: 'n13', cat: 'neuro', name: 'EEG (electroencefalogramă) prelungit', dur: 120, durLabel: '120 min', price: '700 lei' },
   { id: 'n05', cat: 'neuro', name: 'Brainmap (scanare) cu interpretare', dur: 60, durLabel: '', price: '1000 lei' },
@@ -138,8 +162,9 @@ MC.PHOTOS = [
   { src: 'img/hero.jpg', alt: 'Recepția Medicenter Clinic', tag: 'receptie' },
   { src: 'img/clinica/sala-kineto.jpg', alt: 'Sala de kinetoterapie Medicenter Clinic', tag: 'recuperare' },
   { src: 'img/clinica.jpg', alt: 'Terapeută Medicenter lângă aparatura de recuperare', tag: 'recuperare-aparat' },
-  { src: 'img/clinica/eeg.jpg', alt: 'Înregistrare EEG în cabinetul Medicenter Clinic', tag: 'eeg' },
-  { src: 'img/clinica/neurofeedback.jpg', alt: 'Ședință de neurofeedback pentru un copil, la Medicenter Clinic', tag: 'neurofeedback' },
+  { src: 'img/clinica/rpg.jpg', alt: 'Ședință de reeducare posturală globală la Medicenter Clinic', tag: 'rpg', pos: 'center 20%' },
+  { src: 'img/clinica/eeg.jpg', alt: 'Înregistrare EEG în cabinetul Medicenter Clinic', tag: 'eeg', pos: 'center 68%' },
+  { src: 'img/clinica/neurofeedback.jpg', alt: 'Ședință de neurofeedback pentru un copil, la Medicenter Clinic', tag: 'neurofeedback', pos: 'center 45%' },
   { src: 'img/clinica/eeg-2.jpg', alt: 'Pregătirea căștii EEG în cabinetul Medicenter Clinic', tag: 'eeg' }
 ];
 MC.photo = function (tag) { return MC.PHOTOS.find(function (p) { return p.tag === tag; }); };

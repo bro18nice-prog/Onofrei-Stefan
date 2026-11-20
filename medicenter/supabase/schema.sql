@@ -343,7 +343,7 @@ update public.settings set data = data
          'k01','k02','k03','k04','k05','k06','k07','k08','k09','k10','k11','k12','k13','k14','k15','k16',
          'm01','m02','m03','m04','m05','m06','m07','m08','m09','m10','m11','m12',
          'f01','f02','f03','f04','f05','f06','f07','f08','f09','f10',
-         'n01','n02','n03','n04','n05','n06','n07','n08','n09','n10','n11','n12','n13']) as id)) end
+         'n01','n02','n03','n04','n05','n06','n07','n08','n09','n10','n11','n12','n13','n14']) as id)) end
   || case when data ? 'evalRequired' then '{}'::jsonb else '{"evalRequired": {"k05": "k06", "k10": "k06"}}'::jsonb end
   || case when data ? 'newPatient' then '{}'::jsonb else '{"newPatient": ["k06", "n01", "n02", "n03"]}'::jsonb end
 where id = 1;

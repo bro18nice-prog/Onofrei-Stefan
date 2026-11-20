@@ -78,8 +78,8 @@ window.MC = window.MC || {};
   }
   function quickBook() {
     var st = quickState(), q = st.q;
-    var svcOpts = MC.CATS.map(function (c) {
-      return '<optgroup label="' + MC.esc(c.name) + '">' + MC.SERVICES.filter(function (s) { return s.cat === c.id; }).map(function (s) {
+    var svcOpts = MC.SECTIONS.map(function (c) {
+      return '<optgroup label="' + MC.esc(c.name) + '">' + MC.SERVICES.filter(function (s) { return MC.secOf(s) === c.id; }).map(function (s) {
         return opt(s.id, MC.esc(s.name + (s.durLabel ? ' · ' + s.durLabel : '')), s.id === q.svc);
       }).join('') + '</optgroup>';
     }).join('');
@@ -112,7 +112,7 @@ window.MC = window.MC || {};
         return '<li><span><b>' + MC.esc(x.name) + '</b>' + (x.durLabel ? '<small>' + x.durLabel + '</small>' : '') + '</span>' +
           '<em>' + x.price + '</em><button class="btn soft small" data-action="book-svc" data-svc="' + x.id + '">Programează</button></li>';
       }).join('') + '</ul>' +
-      '<button class="link-btn" data-action="goto-cat" data-cat="neuro">' + o.link + ' ' + MC.ICONS.arrow + '</button></div>';
+      '<button class="link-btn" data-action="goto-cat" data-cat="' + o.sec + '">' + o.link + ' ' + MC.ICONS.arrow + '</button></div>';
     return '<section class="sec"><div class="wrap split' + (o.photoFirst ? ' split-rev' : ' split-fwd') + '">' +
       (o.photoFirst ? photos + text : text + photos) + '</div></section>';
   }
@@ -121,13 +121,13 @@ window.MC = window.MC || {};
     return photoServices({ photoFirst: true, photo: eeg[0], inset: eeg[1],
       eyebrow: 'Neurologie pediatrică · investigații', title: 'EEG în clinică',
       lead: 'Electroencefalograma (EEG) standard și prelungită se face în clinică, de asistente pregătite în electroencefalografie, în colaborare cu medicii clinicii.',
-      items: ['n12', 'n13'], link: 'Toate consultațiile și investigațiile' });
+      items: ['n12', 'n13'], sec: 'neuroped', link: 'Toate serviciile de neurologie pediatrică' });
   }
   function neurofeedbackSection() {
     return photoServices({ photoFirst: false, photo: MC.photo('neurofeedback'),
       eyebrow: 'Neurofeedback', title: 'Brainmap și antrenament neuronal',
       lead: 'Brainmap (scanarea activității cerebrale) și ședințe de neurofeedback pentru copii și adulți, cu terapeuți cu certificări internaționale în Neurofeedback și BrainMap. Ședințele se pot face și în pachete de 10 sau 20.',
-      items: ['n05', 'n06', 'n07'], link: 'Vezi și pachetele de neurofeedback' });
+      items: ['n05', 'n06', 'n07'], sec: 'nfb', link: 'Vezi și pachetele de neurofeedback' });
   }
 
   function home() {
@@ -138,7 +138,7 @@ window.MC = window.MC || {};
       ['Psihiatrie pediatrică', 'Consultație, control', 'book-svc', 'n02'],
       ['Psihiatrie', 'Consultație, control', 'book-svc', 'n03'],
       ['Recuperare medicală', 'Kinetoterapie, Schroth, reeducare posturală globală, masaj și fizioterapie', 'goto-cat', 'kineto'],
-      ['Neurofeedback', 'Brainmap (scanare), ședințe și pachete', 'goto-cat', 'neuro']
+      ['Neurofeedback', 'Brainmap (scanare), ședințe și pachete', 'goto-cat', 'nfb']
     ];
     var methods = ['Schroth', 'Reeducare posturală globală', 'Tecar', 'Deep Oscillation', 'Neurofeedback', 'EEG', 'Kinesio taping', 'Drenaj limfatic'];
     var s = MC.store.settings();
@@ -219,8 +219,9 @@ window.MC = window.MC || {};
 
   function services() {
     var active = MC.ui.servicesCat || 'toate';
-    var tabs = [{ id: 'toate', short: 'Toate', color: '#50677a' }].concat(MC.CATS);
-    var cats = active === 'toate' ? MC.CATS : [MC.catById(active)];
+    if (active !== 'toate' && !MC.SECTIONS.some(function (c) { return c.id === active; })) active = 'toate';
+    var tabs = [{ id: 'toate', short: 'Toate', color: '#50677a' }].concat(MC.SECTIONS);
+    var cats = active === 'toate' ? MC.SECTIONS : [MC.secById(active)];
     return pageHero('Listă de prețuri', 'Servicii și prețuri', 'Pachetele se plătesc integral, iar fiecare ședință din pachet se programează separat.') +
       '<section class="wrap page">' +
       '<div class="chips" role="tablist">' + tabs.map(function (t) {
@@ -228,10 +229,14 @@ window.MC = window.MC || {};
           (t.icon ? '<span class="chip-ico">' + MC.ICONS[t.icon] + '</span>' : '') + t.short + '</button>';
       }).join('') + '</div>' +
       cats.map(function (c) {
-        var list = MC.SERVICES.filter(function (s) { return s.cat === c.id; });
+        var list = MC.SERVICES.filter(function (s) { return MC.secOf(s) === c.id; });
+        var ph = c.photo && MC.photo(c.photo);
         var single = list.filter(function (s) { return !s.pkg; });
         var pk = list.filter(function (s) { return s.pkg; });
-        return '<div class="pricelist rv" style="--cat:' + c.color + '"><div class="pl-head"><span class="pl-ico">' + MC.ICONS[c.icon] + '</span><h2>' + c.name + '</h2></div>' +
+        return '<div class="pricelist rv" style="--cat:' + c.color + '"><div class="pl-top' + (ph ? ' has-photo' : '') + '">' +
+          '<div><div class="pl-head"><span class="pl-ico">' + MC.ICONS[c.icon] + '</span><h2>' + c.name + '</h2></div>' +
+          (c.blurb ? '<p class="pl-blurb">' + c.blurb + '</p>' : '') + '</div>' +
+          (ph ? '<img class="pl-photo" src="' + ph.src + '" alt="' + ph.alt + '" loading="lazy" style="object-position:' + (ph.pos || 'center') + '">' : '') + '</div>' +
           rows(single) + (pk.length ? '<h3 class="pk-title">Pachete</h3>' + rows(pk) : '') + '</div>';
       }).join('') +
       '</section>' + ctaBand();
@@ -310,11 +315,11 @@ window.MC = window.MC || {};
 
   function stepService(svc) {
     var b = MC.bk;
-    var cats = b.newPatient ? MC.CATS.filter(function (c) {
-      return MC.SERVICES.some(function (s) { return s.cat === c.id && MC.store.forNewPatients(s.id); });
-    }) : MC.CATS;
+    var cats = b.newPatient ? MC.SECTIONS.filter(function (c) {
+      return MC.SERVICES.some(function (s) { return MC.secOf(s) === c.id && MC.store.forNewPatients(s.id); });
+    }) : MC.SECTIONS;
     if (!cats.some(function (c) { return c.id === b.cat; }) && cats.length) b.cat = cats[0].id;
-    var list = MC.SERVICES.filter(function (s) { return s.cat === b.cat && (!b.newPatient || MC.store.forNewPatients(s.id)); });
+    var list = MC.SERVICES.filter(function (s) { return MC.secOf(s) === b.cat && (!b.newPatient || MC.store.forNewPatients(s.id)); });
     var ev = b.newPatient ? null : needsEval(svc);
     return '<label class="new-patient' + (b.newPatient ? ' on' : '') + '" for="bk-new">' +
         '<input type="checkbox" id="bk-new" data-change="bk-new"' + (b.newPatient ? ' checked' : '') + '>' +
@@ -326,7 +331,7 @@ window.MC = window.MC || {};
           '<span class="chip-ico">' + MC.ICONS[c.icon] + '</span>' + c.short + '</button>';
       }).join('') + '</div>' +
       '<ul class="svc-pick">' + list.map(function (s) {
-        return '<li><button class="svc' + (s.id === b.serviceId ? ' on' : '') + '" style="--cat:' + MC.catById(s.cat).color + '" data-action="bk-svc" data-svc="' + s.id + '">' +
+        return '<li><button class="svc' + (s.id === b.serviceId ? ' on' : '') + '" style="--cat:' + MC.secById(MC.secOf(s)).color + '" data-action="bk-svc" data-svc="' + s.id + '">' +
           '<span class="svc-name">' + MC.esc(s.name) + (s.durLabel ? '<small>' + s.durLabel + '</small>' : '') +
           (!b.newPatient && MC.store.evalFor(s.id) ? '<small class="eval-tag">necesită evaluare înainte</small>' : '') + '</span>' +
           '<span class="svc-price">' + s.price + '</span></button></li>';
@@ -585,7 +590,7 @@ window.MC = window.MC || {};
       resetBooking();
       var svc = MC.serviceById(q.svc);
       var d = MC.parseYmd(q.date);
-      Object.assign(MC.bk, { cat: svc.cat, serviceId: svc.id, date: q.date, hour: q.hour, forChild: q.who === 'child',
+      Object.assign(MC.bk, { cat: MC.secOf(svc), serviceId: svc.id, date: q.date, hour: q.hour, forChild: q.who === 'child',
         step: needsEval(svc) ? 1 : 3, month: new Date(d.getFullYear(), d.getMonth(), 1) });
       MC.go('programare');
     },
@@ -599,7 +604,7 @@ window.MC = window.MC || {};
     'book-svc': function (el) {
       resetBooking();
       var svc = MC.serviceById(el.dataset.svc);
-      Object.assign(MC.bk, { cat: svc.cat, serviceId: svc.id, step: needsEval(svc) ? 1 : 2 });
+      Object.assign(MC.bk, { cat: MC.secOf(svc), serviceId: svc.id, step: needsEval(svc) ? 1 : 2 });
       MC.go('programare');
     },
     'bk-cat': function (el) { MC.bk.cat = el.dataset.cat; MC.render(); },
@@ -610,7 +615,7 @@ window.MC = window.MC || {};
     'bk-eval': function () { MC.bk.evalAnswer = 'yes'; MC.render(); },
     'bk-eval-book': function (el) {
       var ev = MC.serviceById(el.dataset.svc);
-      Object.assign(MC.bk, { cat: ev.cat, serviceId: ev.id, evalAnswer: null, date: null, hour: null });
+      Object.assign(MC.bk, { cat: MC.secOf(ev), serviceId: ev.id, evalAnswer: null, date: null, hour: null });
       MC.toast('Am ales evaluarea. După ea poți programa terapia.', 'ok');
       MC.render();
     },
