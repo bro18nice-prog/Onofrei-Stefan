@@ -1,3 +1,5 @@
-# Site în pregătire: nu indexa. La lansare se înlocuiește cu „Allow: /”.
 User-agent: *
-Disallow: /
+Allow: /
+Disallow: /agenda.html
+
+Sitemap: https://medicenterclinic.ro/sitemap.xml

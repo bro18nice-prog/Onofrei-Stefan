@@ -127,6 +127,8 @@ La fiecare cerere nouă de pe site apare pe telefon „Cerere nouă de programar
 apăsând pe ea se deschide agenda. Se activează pe fiecare telefon în parte.
 
 ### Locuri pe oră, zile închise, terapeut
+- **Blocare pe secții:** apeși pe o oră → **Blochează ora** sau **Blochează ziua** → alegi ce blochezi: toată clinica,
+  **Recuperare medicală** (kineto + masaj + fizio), o singură secție sau Neurologie/psihiatrie/neurofeedback. Apăsând din nou, deblochezi.
 - **Câte locuri sunt la o oră:** apeși pe ora din agendă → sus în dreapta, „Locuri la ora …”: pe toată clinica sau pe secție.
   Gol = normal (după Setări), 0 = închis la ora aceea. Ora primește eticheta „max N” sau „închis”.
 - **O zi întreagă închisă:** apeși pe orice oră din ziua respectivă → **Închide toată ziua**. Ziua apare hașurată, cu „ÎNCHIS”,
@@ -137,6 +139,13 @@ apăsând pe ea se deschide agenda. Se activează pe fiecare telefon în parte.
 ### Setări (doar administratori)
 Câte locuri are fiecare terapie la aceeași oră (inițial 7 la toate: medicul așază pacienții la confirmare), programul, zilele lucrătoare, cu câte zile înainte se pot face programări, lista personalului.
 
-## De completat înainte de lansare
+## Adrese și lansare
+- Site-ul oficial: **https://medicenterclinic.ro** (agenda: `https://medicenterclinic.ro/agenda.html`, cod QR în `img/qr-agenda.png`).
+- Adresa veche `medicenter.bro18nice.workers.dev` merge în continuare, dar e ascunsă din Google (`_headers`), ca să nu apară de două ori.
+- Google: `robots.txt` permite totul în afară de agendă; `sitemap.xml` arată pagina principală. Datele clinicii (adresă, telefon, program) sunt
+  în `index.html`, pentru rezultatele Google.
+- În Supabase → Authentication → URL Configuration: Site URL `https://medicenterclinic.ro/agenda.html`, Redirect URLs `https://medicenterclinic.ro/**`.
+
+## De completat
+- `js/data.js` → `company`: denumirea firmei, pentru Politica de confidențialitate (cerută de GDPR).
 - `js/data.js` → `retentionMonths`: cât se păstrează datele programărilor (implicit 24 de luni).
-- Fotografiile care lipsesc din echipă (până atunci apar inițialele): se pun în `img/echipa/` și se trec în `js/data.js` → `MC.TEAM`.

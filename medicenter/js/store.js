@@ -215,6 +215,15 @@ window.MC = window.MC || {};
         if (cap != null) state.slotCaps.push({ date: date, hour: hour, cat: cat, cap: cap });
         save(); return Promise.resolve();
       },
+      setSlotCaps: function (date, hours, cats, cap) {
+        hours.forEach(function (h) { cats.forEach(function (c) {
+          var cur = slotCap(date, h, c);
+          if (cap == null && cur !== 0) return;
+          state.slotCaps = state.slotCaps.filter(function (x) { return !(x.date === date && x.hour === h && x.cat === c); });
+          if (cap != null) state.slotCaps.push({ date: date, hour: h, cat: c, cap: cap });
+        }); });
+        save(); return Promise.resolve();
+      },
       setTherapist: function (id, name) {
         var b = find(id); if (b) b.therapist = name || '';
         save(); return Promise.resolve();
@@ -382,6 +391,26 @@ window.MC = window.MC || {};
           if (cap != null) state.slotCaps.push({ date: date, hour: hour, cat: cat, cap: cap });
         });
       },
+      /* Blochează (cap 0) sau deblochează (null) mai multe ore/secții dintr-o zi, dintr-o singură cerere. */
+      setSlotCaps: function (date, hours, cats, cap) {
+        var q;
+        if (cap == null) {
+          q = sb.from('slot_caps').delete().eq('date', date).in('hour', hours).in('cat', cats).eq('cap', 0);
+        } else {
+          var now = new Date().toISOString(), rows = [];
+          hours.forEach(function (h) { cats.forEach(function (c) { rows.push({ date: date, hour: h, cat: c, cap: cap, updated_at: now }); }); });
+          q = sb.from('slot_caps').upsert(rows);
+        }
+        return q.then(function (res) {
+          if (res.error) return fail(res.error);
+          hours.forEach(function (h) { cats.forEach(function (c) {
+            var cur = slotCap(date, h, c);
+            if (cap == null && cur !== 0) return;
+            state.slotCaps = state.slotCaps.filter(function (x) { return !(x.date === date && x.hour === h && x.cat === c); });
+            if (cap != null) state.slotCaps.push({ date: date, hour: h, cat: c, cap: cap });
+          }); });
+        });
+      },
       setTherapist: function (id, name) {
         return sb.from('bookings').update({ therapist: name || '', updated_at: new Date().toISOString() }).eq('id', id).then(function (res) {
           if (res.error) return fail(res.error);
@@ -541,6 +570,7 @@ window.MC = window.MC || {};
     supports: function (name) { return !!state.features[name]; },
     countWhere: countWhere,
     setSlotCap: impl.setSlotCap,
+    setSlotCaps: impl.setSlotCaps,
     setTherapist: impl.setTherapist,
     updateBooking: impl.updateBooking,
     savePush: impl.savePush,

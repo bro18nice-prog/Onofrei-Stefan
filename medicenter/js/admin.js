@@ -208,9 +208,10 @@ window.MC = window.MC || {};
     var cols = 'grid-template-columns:56px repeat(' + shown.length + ', minmax(0,1fr))';
     var grid = '<div class="ag-scroll"><div class="ag" style="' + cols + '"><div class="ag-corner"></div>';
     shown.forEach(function (d) {
-      var shut = MC.store.supports('caps') && dayClosed(MC.ymd(d));
-      grid += '<div class="ag-day' + (MC.ymd(d) === todayYmd ? ' today' : '') + (shut ? ' shut' : '') + '">' + MC.DAYS_SHORT[d.getDay()] + '<b>' + d.getDate() + '</b>' +
-        (shut ? '<small>închis</small>' : '') + '</div>';
+      var bd = MC.store.supports('caps') ? blockedCats(MC.ymd(d), dayHours()) : [];
+      var shut = bd.indexOf('*') >= 0;
+      grid += '<div class="ag-day' + (MC.ymd(d) === todayYmd ? ' today' : '') + (shut ? ' shut' : bd.length ? ' part' : '') + '">' + MC.DAYS_SHORT[d.getDay()] + '<b>' + d.getDate() + '</b>' +
+        (shut ? '<small>închis</small>' : bd.length ? '<small>închis: ' + MC.esc(blockedLabel(bd)) + '</small>' : '') + '</div>';
     });
     var now = new Date();
     for (var h = s.open; h < s.close; h++) {
@@ -243,7 +244,9 @@ window.MC = window.MC || {};
     if (capM != null) badge = '<span class="cnt capo" title="locuri setate manual">' + (capM === 0 ? 'închis' : 'max ' + capM) + '</span>' + badge;
     else if (anyCat) {
       var set = MC.CATS.filter(function (c) { return MC.store.slotCap(date, hour, c.id) != null; });
-      var lbl = set.length === 1 ? set[0].short + ' ' + (MC.store.slotCap(date, hour, set[0].id) === 0 ? 'închis' : 'max ' + MC.store.slotCap(date, hour, set[0].id)) : 'locuri setate';
+      var zero = set.filter(function (c) { return MC.store.slotCap(date, hour, c.id) === 0; }).map(function (c) { return c.id; });
+      var lbl = zero.length === set.length ? blockedLabel(zero) + ' închis'
+        : set.length === 1 ? set[0].short + ' max ' + MC.store.slotCap(date, hour, set[0].id) : 'locuri setate';
       badge = '<span class="cnt capo" title="locuri setate pe secții">' + lbl + '</span>' + badge;
     }
     var sel = (a.panel.mode === 'new' || a.panel.mode === 'slot') && a.panel.date === date && a.panel.hour === hour;
@@ -294,21 +297,53 @@ window.MC = window.MC || {};
     }).join('');
   }
 
-  /* Ziua e închisă când toate orele au 0 locuri pe toată clinica. */
-  function dayClosed(date) {
-    var s = MC.store.settings();
-    for (var h = s.open; h < s.close; h++) if (MC.store.slotCap(date, h, '*') !== 0) return false;
-    return true;
+  /* Ce se poate bloca: toată clinica, toată recuperarea, o secție (după secțiile din baza de date). */
+  var BLOCK_GROUPS = [
+    { id: '*', label: 'Toată clinica', cats: ['*'] },
+    { id: 'rec', label: 'Recuperare medicală', hint: 'kinetoterapie, masaj, fizioterapie', cats: ['kineto', 'masaj', 'fizio'] },
+    { id: 'kineto', label: 'Kinetoterapie', cats: ['kineto'] },
+    { id: 'masaj', label: 'Masaj', cats: ['masaj'] },
+    { id: 'fizio', label: 'Fizioterapie', cats: ['fizio'] },
+    { id: 'neuro', label: 'Neurologie, psihiatrie, neurofeedback', cats: ['neuro'] }
+  ];
+  function groupById(id) { return BLOCK_GROUPS.find(function (g) { return g.id === id; }); }
+  function dayHours() {
+    var s = MC.store.settings(), out = [];
+    for (var h = s.open; h < s.close; h++) out.push(h);
+    return out;
   }
-  function setDay(date, cap) {
-    var s = MC.store.settings();
-    var chain = Promise.resolve();
-    for (var h = s.open; h < s.close; h++) (function (hh) {
-      if (MC.store.slotCap(date, hh, '*') === cap) return;
-      if (cap == null && MC.store.slotCap(date, hh, '*') !== 0) return;
-      chain = chain.then(function () { return MC.store.setSlotCap(date, hh, '*', cap); });
-    })(h);
-    return chain;
+  function blocked(date, hours, cats) {
+    return hours.every(function (h) { return cats.every(function (c) { return MC.store.slotCap(date, h, c) === 0; }); });
+  }
+  /* Secțiile blocate (0 locuri) la o oră sau toată ziua; '*' = toată clinica. */
+  function blockedCats(date, hours) {
+    return ['*'].concat(MC.CATS.map(function (c) { return c.id; })).filter(function (c) { return blocked(date, hours, [c]); });
+  }
+  function blockedLabel(list) {
+    if (!list.length) return '';
+    if (list.indexOf('*') >= 0) return 'Toată clinica';
+    var names = [];
+    var rec = ['kineto', 'masaj', 'fizio'].every(function (c) { return list.indexOf(c) >= 0; });
+    if (rec) names.push('Recuperare');
+    list.forEach(function (c) { if (!(rec && ['kineto', 'masaj', 'fizio'].indexOf(c) >= 0)) names.push(MC.catById(c).short); });
+    return names.join(', ');
+  }
+  function dayClosed(date) { return blocked(date, dayHours(), ['*']); }
+
+  /* Alegerea a ce se blochează: la ora selectată sau toată ziua. */
+  function blockChooser(date, hour, scope) {
+    var hours = scope === 'day' ? dayHours() : [hour];
+    var rows = BLOCK_GROUPS.map(function (g) {
+      var isB = blocked(date, hours, g.cats);
+      return '<button type="button" class="block-opt' + (isB ? ' is-blocked' : '') + '" data-action="adm-block" data-scope="' + scope + '" data-group="' + g.id + '">' +
+        (isB ? I.unlock : I.lock) + '<span class="bo-txt"><b>' + g.label + '</b>' + (g.hint ? '<small>' + g.hint + '</small>' : '') +
+        (isB ? '<small class="bo-hint">Apasă ca să deblochezi</small>' : '') + '</span>' +
+        '<span class="bo-tag">' + (isB ? 'Blocat' : 'Blochează') + '</span></button>';
+    }).join('');
+    return '<div class="sub-form block-card"><h3>' + (scope === 'day' ? 'Ce blochezi toată ziua (' + MC.fmtDate(date) + ')?' : 'Ce blochezi la ora ' + MC.hourLabel(hour) + '?') + '</h3>' +
+      '<p class="muted small">Pacienții nu mai pot alege online ce e blocat. Programările deja făcute rămân în agendă.</p>' +
+      '<div class="block-opts">' + rows + '</div>' +
+      '<button type="button" class="btn ghost block" data-action="adm-cancel-no">Gata</button></div>';
   }
 
   /* Câte locuri sunt la o anumită oră: setate manual pe secție sau pe toată clinica. */
@@ -333,23 +368,25 @@ window.MC = window.MC || {};
     var p = MC.adm.panel, date = p.date, hour = p.hour, sub = MC.adm.confirm;
     var used = MC.store.countWhere(date, hour, null, null);
     var all = MC.store.slotCap(date, hour, '*');
-    var shutDay = MC.store.supports('caps') && dayClosed(date);
-    var cats = MC.CATS.filter(function (c) { return MC.store.slotCap(date, hour, c.id) != null; });
-    var state = shutDay ? 'Toată ziua este blocată pentru programări online.'
-      : all === 0 ? 'Ora este blocată pentru programări online.'
-      : all != null ? 'Maximum ' + all + ' pacienți la ora asta (toată clinica).'
-      : cats.length ? 'Locuri setate: ' + cats.map(function (c) { var v = MC.store.slotCap(date, hour, c.id); return c.short + ' ' + (v === 0 ? 'închis' : v); }).join(', ') + '.'
-      : 'Locuri normale (după Setări).';
-    var on = function (k) { return sub === k ? ' on' : ''; };
     var caps = MC.store.supports('caps');
+    var bHour = caps ? blockedCats(date, [hour]) : [], bDay = caps ? blockedCats(date, dayHours()) : [];
+    var others = MC.CATS.filter(function (c) { var v = MC.store.slotCap(date, hour, c.id); return v != null && v > 0; });
+    var state = (bDay.length ? 'Blocat toată ziua: ' + blockedLabel(bDay) + '.' : '') +
+      (bHour.length && blockedLabel(bHour) !== blockedLabel(bDay) ? (bDay.length ? ' ' : '') + 'Blocat la ora asta: ' + blockedLabel(bHour) + '.' : '') +
+      (all != null && all > 0 ? ' Maximum ' + all + ' pacienți la ora asta (toată clinica).' : '') +
+      (others.length ? ' Locuri setate: ' + others.map(function (c) { return c.short + ' ' + MC.store.slotCap(date, hour, c.id); }).join(', ') + '.' : '');
+    if (!state) state = 'Totul este deschis, cu locurile normale (după Setări).';
+    var on = function (k) { return sub === k ? ' on' : ''; };
     var grid = act(I.plus, 'Programare nouă', 'data-action="adm-sub" data-sub="add"', 'ok' + on('add')) + (!caps ? '' :
-      (all === 0 ? act(I.unlock, 'Deblochează ora', 'data-action="adm-block-hour" data-v=""') : act(I.lock, 'Blochează ora', 'data-action="adm-block-hour" data-v="0"', 'bad')) +
+      act(I.lock, bHour.length ? 'Blocare la ora asta' : 'Blochează ora', 'data-action="adm-sub" data-sub="block-hour"', 'bad' + on('block-hour')) +
       act(I.seats, 'Locuri la ora asta', 'data-action="adm-sub" data-sub="caps"', on('caps')) +
-      (shutDay ? act(I.dayok, 'Deblochează ziua', 'data-action="adm-open-day" data-date="' + date + '"') : act(I.day, 'Blochează ziua', 'data-action="adm-close-day" data-date="' + date + '"', 'bad')));
-    var form = sub === 'add' ? addForm(date, hour) : sub === 'caps' ? capsCard(date, hour) : '';
+      act(I.day, bDay.length ? 'Blocare toată ziua' : 'Blochează ziua', 'data-action="adm-sub" data-sub="block-day"', 'bad' + on('block-day')));
+    var shutDay = bDay.indexOf('*') >= 0;
+    var form = sub === 'add' ? addForm(date, hour) : sub === 'caps' ? capsCard(date, hour)
+      : sub === 'block-hour' ? blockChooser(date, hour, 'hour') : sub === 'block-day' ? blockChooser(date, hour, 'day') : '';
     return '<div class="card"><div class="panel-head"><h2 class="card-title">' + MC.cap(MC.fmtDate(date)) + ', ora ' + MC.hourLabel(hour) + '</h2>' +
       '<button class="icon-btn" data-action="adm-close" aria-label="Închide">×</button></div>' +
-      '<p class="slot-state' + (shutDay || all === 0 ? ' shut' : '') + '">' + state + '<br><span class="muted small">' + used + (used === 1 ? ' programare' : ' programări') + ' la ora asta</span></p>' +
+      '<p class="slot-state' + (bHour.length || bDay.length ? ' shut' : '') + '">' + state + '<br><span class="muted small">' + used + (used === 1 ? ' programare' : ' programări') + ' la ora asta</span></p>' +
       '<h3 class="act-title">Ce vrei să faci?</h3><div class="act-grid">' + grid + '</div>' +
       '<p class="form-error" id="slot-error" role="alert" hidden></p>' + form + '</div>';
   }
@@ -802,20 +839,17 @@ window.MC = window.MC || {};
       var f = document.querySelector('#adm-panel .sub-form');
       if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); var i = f.querySelector('input,select,textarea'); if (i && !narrow()) i.focus(); }
     },
-    'adm-block-hour': function (el) {
-      var p = MC.adm.panel, v = el.dataset.v === '' ? null : 0;
-      run(MC.store.setSlotCap(p.date, p.hour, '*', v), v === 0 ? 'Ora ' + MC.hourLabel(p.hour) + ' este blocată pentru programări online.' : 'Ora ' + MC.hourLabel(p.hour) + ' este din nou liberă.', 'slot-error')
+    'adm-block': function (el) {
+      var p = MC.adm.panel, g = groupById(el.dataset.group), day = el.dataset.scope === 'day';
+      var hours = day ? dayHours() : [p.hour];
+      var isB = blocked(p.date, hours, g.cats);
+      var what = g.label + (day ? ', toată ziua de ' + MC.fmtDate(p.date) : ', ora ' + MC.hourLabel(p.hour));
+      var left = isB ? 0 : MC.store.bookingsOn(p.date).filter(function (b) {
+        return (g.cats[0] === '*' || g.cats.indexOf(b.cat) >= 0) && (day || (p.hour >= b.hour && p.hour < b.hour + b.hours));
+      }).length;
+      run(MC.store.setSlotCaps(p.date, hours, g.cats, isB ? null : 0),
+        (isB ? 'Deblocat: ' : 'Blocat: ') + what + '.' + (left ? ' Atenție: ' + left + (left === 1 ? ' programare rămâne' : ' programări rămân') + ' în agendă.' : ''), 'slot-error')
         .then(MC.render, function () {});
-    },
-    'adm-close-day': function (el) {
-      var d = el.dataset.date;
-      var left = MC.store.bookingsOn(d).length;
-      run(setDay(d, 0), MC.cap(MC.fmtDate(d)) + ' este închisă pentru programări online.' +
-        (left ? ' Atenție: ' + left + (left === 1 ? ' programare rămâne' : ' programări rămân') + ' în agendă, mută-le sau anulează-le.' : ''), 'caps-error').then(MC.render, function () {});
-    },
-    'adm-open-day': function (el) {
-      var d = el.dataset.date;
-      run(setDay(d, null), MC.cap(MC.fmtDate(d)) + ' este din nou deschisă.', 'caps-error').then(MC.render, function () {});
     },
     'adm-push-on': function () {
       run(pushOn(), 'Notificările sunt active pe acest telefon.', null).then(function () { MC.adm.push = 'on'; MC.render(); }, function () { MC.refreshPush(); });
